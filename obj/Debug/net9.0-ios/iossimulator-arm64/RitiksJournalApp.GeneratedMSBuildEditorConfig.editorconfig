@@ -31,6 +31,27 @@ build_metadata.AdditionalFiles.TargetPath = App.xaml
 build_metadata.AdditionalFiles.RelativePath = App.xaml
 build_metadata.AdditionalFiles.CssScope = 
 
+[/Users/riya/Documents/Application development /Coursework/newfff/RitiksJournalApp/DaytoDayUpdateJournalApp/App.xaml]
+build_metadata.AdditionalFiles.GenKind = Xaml
+build_metadata.AdditionalFiles.ManifestResourceName = RitiksJournalApp.DaytoDayUpdateJournalApp.App.xaml
+build_metadata.AdditionalFiles.TargetPath = DaytoDayUpdateJournalApp/App.xaml
+build_metadata.AdditionalFiles.RelativePath = DaytoDayUpdateJournalApp/App.xaml
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/riya/Documents/Application development /Coursework/newfff/RitiksJournalApp/DaytoDayUpdateJournalApp/MainPage.xaml]
+build_metadata.AdditionalFiles.GenKind = Xaml
+build_metadata.AdditionalFiles.ManifestResourceName = RitiksJournalApp.DaytoDayUpdateJournalApp.MainPage.xaml
+build_metadata.AdditionalFiles.TargetPath = DaytoDayUpdateJournalApp/MainPage.xaml
+build_metadata.AdditionalFiles.RelativePath = DaytoDayUpdateJournalApp/MainPage.xaml
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/riya/Documents/Application development /Coursework/newfff/RitiksJournalApp/DaytoDayUpdateJournalApp/Platforms/Windows/App.xaml]
+build_metadata.AdditionalFiles.GenKind = Xaml
+build_metadata.AdditionalFiles.ManifestResourceName = RitiksJournalApp.DaytoDayUpdateJournalApp.Platforms.Windows.App.xaml
+build_metadata.AdditionalFiles.TargetPath = DaytoDayUpdateJournalApp/Platforms/Windows/App.xaml
+build_metadata.AdditionalFiles.RelativePath = DaytoDayUpdateJournalApp/Platforms/Windows/App.xaml
+build_metadata.AdditionalFiles.CssScope = 
+
 [/Users/riya/Documents/Application development /Coursework/newfff/RitiksJournalApp/MainPage.xaml]
 build_metadata.AdditionalFiles.GenKind = Xaml
 build_metadata.AdditionalFiles.ManifestResourceName = RitiksJournalApp.MainPage.xaml
@@ -66,9 +87,51 @@ build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9fSW1wb3J0cy5yYXpvcg==
 build_metadata.AdditionalFiles.RelativePath = 
 build_metadata.AdditionalFiles.CssScope = 
 
+[/Users/riya/Documents/Application development /Coursework/newfff/RitiksJournalApp/DaytoDayUpdateJournalApp/Components/Pages/AddEntry.razor]
+build_metadata.AdditionalFiles.GenKind = 
+build_metadata.AdditionalFiles.ManifestResourceName = 
+build_metadata.AdditionalFiles.TargetPath = RGF5dG9EYXlVcGRhdGVKb3VybmFsQXBwL0NvbXBvbmVudHMvUGFnZXMvQWRkRW50cnkucmF6b3I=
+build_metadata.AdditionalFiles.RelativePath = 
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/riya/Documents/Application development /Coursework/newfff/RitiksJournalApp/DaytoDayUpdateJournalApp/Components/Pages/Home.razor]
+build_metadata.AdditionalFiles.GenKind = 
+build_metadata.AdditionalFiles.ManifestResourceName = 
+build_metadata.AdditionalFiles.TargetPath = RGF5dG9EYXlVcGRhdGVKb3VybmFsQXBwL0NvbXBvbmVudHMvUGFnZXMvSG9tZS5yYXpvcg==
+build_metadata.AdditionalFiles.RelativePath = 
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/riya/Documents/Application development /Coursework/newfff/RitiksJournalApp/DaytoDayUpdateJournalApp/Components/Routes.razor]
+build_metadata.AdditionalFiles.GenKind = 
+build_metadata.AdditionalFiles.ManifestResourceName = 
+build_metadata.AdditionalFiles.TargetPath = RGF5dG9EYXlVcGRhdGVKb3VybmFsQXBwL0NvbXBvbmVudHMvUm91dGVzLnJhem9y
+build_metadata.AdditionalFiles.RelativePath = 
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/riya/Documents/Application development /Coursework/newfff/RitiksJournalApp/DaytoDayUpdateJournalApp/Components/_Imports.razor]
+build_metadata.AdditionalFiles.GenKind = 
+build_metadata.AdditionalFiles.ManifestResourceName = 
+build_metadata.AdditionalFiles.TargetPath = RGF5dG9EYXlVcGRhdGVKb3VybmFsQXBwL0NvbXBvbmVudHMvX0ltcG9ydHMucmF6b3I=
+build_metadata.AdditionalFiles.RelativePath = 
+build_metadata.AdditionalFiles.CssScope = 
+
 [/Users/riya/Documents/Application development /Coursework/newfff/RitiksJournalApp/Components/Layout/MainLayout.razor]
 build_metadata.AdditionalFiles.GenKind = 
 build_metadata.AdditionalFiles.ManifestResourceName = 
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9MYXlvdXQvTWFpbkxheW91dC5yYXpvcg==
 build_metadata.AdditionalFiles.RelativePath = 
 build_metadata.AdditionalFiles.CssScope = b-vslzu8dq3c
+
+[/Users/riya/Documents/Application development /Coursework/newfff/RitiksJournalApp/DaytoDayUpdateJournalApp/Components/Layout/MainLayout.razor]
+build_metadata.AdditionalFiles.GenKind = 
+build_metadata.AdditionalFiles.ManifestResourceName = 
+build_metadata.AdditionalFiles.TargetPath = RGF5dG9EYXlVcGRhdGVKb3VybmFsQXBwL0NvbXBvbmVudHMvTGF5b3V0L01haW5MYXlvdXQucmF6b3I=
+build_metadata.AdditionalFiles.RelativePath = 
+build_metadata.AdditionalFiles.CssScope = b-whmtm4xe3s
+
+[/Users/riya/Documents/Application development /Coursework/newfff/RitiksJournalApp/DaytoDayUpdateJournalApp/Components/Layout/NavMenu.razor]
+build_metadata.AdditionalFiles.GenKind = 
+build_metadata.AdditionalFiles.ManifestResourceName = 
+build_metadata.AdditionalFiles.TargetPath = RGF5dG9EYXlVcGRhdGVKb3VybmFsQXBwL0NvbXBvbmVudHMvTGF5b3V0L05hdk1lbnUucmF6b3I=
+build_metadata.AdditionalFiles.RelativePath = 
+build_metadata.AdditionalFiles.CssScope = b-x136s0sdqw
