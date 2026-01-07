@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
-using DailyJournalApp.Services;
+using RitiksJournalApp.Services;
 
-namespace DailyJournalApp
+namespace RitiksJournalApp
 {
     public static class MauiProgram
     {

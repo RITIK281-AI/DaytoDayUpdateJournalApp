@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using DailyJournalApp.Models;
+using RitiksJournalApp.Models;
 using SQLite;
 using SQLitePCL;
 
-namespace DailyJournalApp.Services
+namespace RitiksJournalApp.Services
 {
     public class DatabaseService
     {
@@ -33,14 +33,14 @@ namespace DailyJournalApp.Services
         {
             await Init();
             // Get all entries, sorted by newest date first
-            return await _database.Table<JournalEntry>().OrderByDescending(e => e.Date).ToListAsync();
+            return await _database!.Table<JournalEntry>().OrderByDescending(e => e.Date).ToListAsync();
         }
 
         // 3. GET one entry by ID
         public async Task<JournalEntry> GetEntryByIdAsync(int id)
         {
             await Init();
-            return await _database.Table<JournalEntry>().Where(i => i.Id == id).FirstOrDefaultAsync();
+            return await _database!.Table<JournalEntry>().Where(i => i.Id == id).FirstOrDefaultAsync();
         }
 
         // 4. GET entry by Date (Task 1: One entry per day rule)
@@ -51,7 +51,7 @@ namespace DailyJournalApp.Services
             var startOfDay = date.Date;
             var endOfDay = date.Date.AddDays(1).AddTicks(-1);
 
-            return await _database.Table<JournalEntry>()
+            return await _database!.Table<JournalEntry>()
                             .Where(e => e.Date >= startOfDay && e.Date <= endOfDay)
                             .FirstOrDefaultAsync();
         }
@@ -64,14 +64,14 @@ namespace DailyJournalApp.Services
             {
                 // Update existing
                 entry.UpdatedAt = DateTime.Now;
-                await _database.UpdateAsync(entry);
+                await _database!.UpdateAsync(entry);
             }
             else
             {
                 // Create new
                 entry.CreatedAt = DateTime.Now;
                 entry.UpdatedAt = DateTime.Now;
-                await _database.InsertAsync(entry);
+                await _database!.InsertAsync(entry);
             }
         }
 
@@ -81,7 +81,7 @@ namespace DailyJournalApp.Services
         {
             await Init();
             // This tells the database: "Find the JournalEntry with this ID and delete it"
-            await _database.DeleteAsync<JournalEntry>(id);
+            await _database!.DeleteAsync<JournalEntry>(id);
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using ObjCRuntime;
 using UIKit;
 
-namespace DailyJournalApp
+namespace RitiksJournalApp
 {
     public class Program
     {

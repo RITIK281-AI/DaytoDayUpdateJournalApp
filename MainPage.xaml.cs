@@ -1,4 +1,4 @@
-﻿namespace DailyJournalApp
+﻿namespace RitiksJournalApp
 {
     public partial class MainPage : ContentPage
     {

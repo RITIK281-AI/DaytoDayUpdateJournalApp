@@ -1,36 +1,29 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\suban\\Documents\\Y3\\CS6004NP App Dev\\CourseWork\\DailyJournalApp\\DailyJournalApp.csproj": {}
+    "/Users/riya/Documents/Application development /Coursework/newfff/DailyJournalApp/DailyJournalApp.csproj": {}
   },
   "projects": {
-    "C:\\Users\\suban\\Documents\\Y3\\CS6004NP App Dev\\CourseWork\\DailyJournalApp\\DailyJournalApp.csproj": {
+    "/Users/riya/Documents/Application development /Coursework/newfff/DailyJournalApp/DailyJournalApp.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\suban\\Documents\\Y3\\CS6004NP App Dev\\CourseWork\\DailyJournalApp\\DailyJournalApp.csproj",
+        "projectUniqueName": "/Users/riya/Documents/Application development /Coursework/newfff/DailyJournalApp/DailyJournalApp.csproj",
         "projectName": "DailyJournalApp",
-        "projectPath": "C:\\Users\\suban\\Documents\\Y3\\CS6004NP App Dev\\CourseWork\\DailyJournalApp\\DailyJournalApp.csproj",
-        "packagesPath": "C:\\Users\\suban\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\suban\\Documents\\Y3\\CS6004NP App Dev\\CourseWork\\DailyJournalApp\\obj\\",
+        "projectPath": "/Users/riya/Documents/Application development /Coursework/newfff/DailyJournalApp/DailyJournalApp.csproj",
+        "packagesPath": "/Users/riya/.nuget/packages/",
+        "outputPath": "/Users/riya/Documents/Application development /Coursework/newfff/DailyJournalApp/obj/",
         "projectStyle": "PackageReference",
         "crossTargeting": true,
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\suban\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "/Users/riya/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0-android",
           "net9.0-ios",
-          "net9.0-maccatalyst",
-          "net9.0-windows10.0.19041.0"
+          "net9.0-maccatalyst"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
+          "/usr/local/share/dotnet/library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -44,10 +37,6 @@
           },
           "net9.0-maccatalyst26.0": {
             "targetAlias": "net9.0-maccatalyst",
-            "projectReferences": {}
-          },
-          "net9.0-windows10.0.19041": {
-            "targetAlias": "net9.0-windows10.0.19041.0",
             "projectReferences": {}
           }
         },
@@ -82,156 +71,8 @@
             "Microsoft.NET.ILLink.Tasks": {
               "suppressParent": "All",
               "target": "Package",
-              "version": "[9.0.11, )",
+              "version": "[9.0.9, )",
               "autoReferenced": true
-            },
-            "SQLitePCLRaw.bundle_green": {
-              "target": "Package",
-              "version": "[2.1.11, )"
-            },
-            "sqlite-net-pcl": {
-              "target": "Package",
-              "version": "[1.9.172, )"
-            }
-          },
-          "imports": [
-            "net461",
-            "net462",
-            "net47",
-            "net471",
-            "net472",
-            "net48",
-            "net481"
-          ],
-          "assetTargetFallback": true,
-          "warn": true,
-          "frameworkReferences": {
-            "Microsoft.Android": {
-              "privateAssets": "all"
-            },
-            "Microsoft.NETCore.App": {
-              "privateAssets": "all"
-            }
-          },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.308/PortableRuntimeIdentifierGraph.json"
-        },
-        "net9.0-ios26.0": {
-          "targetAlias": "net9.0-ios",
-          "dependencies": {
-            "Microsoft.AspNetCore.Components.WebView.Maui": {
-              "target": "Package",
-              "version": "[9.0.120, )"
-            },
-            "Microsoft.Extensions.Logging.Debug": {
-              "target": "Package",
-              "version": "[9.0.9, )"
-            },
-            "Microsoft.Maui.Controls": {
-              "target": "Package",
-              "version": "[9.0.120, )"
-            },
-            "Microsoft.NET.ILLink.Tasks": {
-              "suppressParent": "All",
-              "target": "Package",
-              "version": "[9.0.11, )",
-              "autoReferenced": true
-            },
-            "SQLitePCLRaw.bundle_green": {
-              "target": "Package",
-              "version": "[2.1.11, )"
-            },
-            "sqlite-net-pcl": {
-              "target": "Package",
-              "version": "[1.9.172, )"
-            }
-          },
-          "imports": [
-            "net461",
-            "net462",
-            "net47",
-            "net471",
-            "net472",
-            "net48",
-            "net481"
-          ],
-          "assetTargetFallback": true,
-          "warn": true,
-          "frameworkReferences": {
-            "Microsoft.iOS": {
-              "privateAssets": "all"
-            },
-            "Microsoft.NETCore.App": {
-              "privateAssets": "all"
-            }
-          },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.308/PortableRuntimeIdentifierGraph.json"
-        },
-        "net9.0-maccatalyst26.0": {
-          "targetAlias": "net9.0-maccatalyst",
-          "dependencies": {
-            "Microsoft.AspNetCore.Components.WebView.Maui": {
-              "target": "Package",
-              "version": "[9.0.120, )"
-            },
-            "Microsoft.Extensions.Logging.Debug": {
-              "target": "Package",
-              "version": "[9.0.9, )"
-            },
-            "Microsoft.Maui.Controls": {
-              "target": "Package",
-              "version": "[9.0.120, )"
-            },
-            "Microsoft.NET.ILLink.Tasks": {
-              "suppressParent": "All",
-              "target": "Package",
-              "version": "[9.0.11, )",
-              "autoReferenced": true
-            },
-            "SQLitePCLRaw.bundle_green": {
-              "target": "Package",
-              "version": "[2.1.11, )"
-            },
-            "sqlite-net-pcl": {
-              "target": "Package",
-              "version": "[1.9.172, )"
-            }
-          },
-          "imports": [
-            "xamarinios10",
-            "net461",
-            "net462",
-            "net47",
-            "net471",
-            "net472",
-            "net48",
-            "net481"
-          ],
-          "assetTargetFallback": true,
-          "warn": true,
-          "frameworkReferences": {
-            "Microsoft.MacCatalyst": {
-              "privateAssets": "all"
-            },
-            "Microsoft.NETCore.App": {
-              "privateAssets": "all"
-            }
-          },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.308/PortableRuntimeIdentifierGraph.json"
-        },
-        "net9.0-windows10.0.19041": {
-          "targetAlias": "net9.0-windows10.0.19041.0",
-          "dependencies": {
-            "Microsoft.AspNetCore.Components.WebView.Maui": {
-              "target": "Package",
-              "version": "[9.0.120, )"
-            },
-            "Microsoft.Extensions.Logging.Debug": {
-              "target": "Package",
-              "version": "[9.0.9, )"
-            },
-            "Microsoft.Maui.Controls": {
-              "target": "Package",
-              "version": "[9.0.120, )"
             },
             "SQLitePCLRaw.bundle_green": {
               "target": "Package",
@@ -255,19 +96,134 @@
           "warn": true,
           "downloadDependencies": [
             {
-              "name": "Microsoft.Windows.SDK.NET.Ref",
-              "version": "[10.0.19041.57, 10.0.19041.57]"
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.11, 9.0.11]"
             }
           ],
           "frameworkReferences": {
-            "Microsoft.NETCore.App": {
+            "Microsoft.Android": {
               "privateAssets": "all"
             },
-            "Microsoft.Windows.SDK.NET.Ref.Windows": {
+            "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.308\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/9.0.305/PortableRuntimeIdentifierGraph.json"
+        },
+        "net9.0-ios26.0": {
+          "targetAlias": "net9.0-ios",
+          "dependencies": {
+            "Microsoft.AspNetCore.Components.WebView.Maui": {
+              "target": "Package",
+              "version": "[9.0.120, )"
+            },
+            "Microsoft.Extensions.Logging.Debug": {
+              "target": "Package",
+              "version": "[9.0.9, )"
+            },
+            "Microsoft.Maui.Controls": {
+              "target": "Package",
+              "version": "[9.0.120, )"
+            },
+            "Microsoft.NET.ILLink.Tasks": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[9.0.9, )",
+              "autoReferenced": true
+            },
+            "SQLitePCLRaw.bundle_green": {
+              "target": "Package",
+              "version": "[2.1.11, )"
+            },
+            "sqlite-net-pcl": {
+              "target": "Package",
+              "version": "[1.9.172, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.11, 9.0.11]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.iOS": {
+              "privateAssets": "all"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/9.0.305/PortableRuntimeIdentifierGraph.json"
+        },
+        "net9.0-maccatalyst26.0": {
+          "targetAlias": "net9.0-maccatalyst",
+          "dependencies": {
+            "Microsoft.AspNetCore.Components.WebView.Maui": {
+              "target": "Package",
+              "version": "[9.0.120, )"
+            },
+            "Microsoft.Extensions.Logging.Debug": {
+              "target": "Package",
+              "version": "[9.0.9, )"
+            },
+            "Microsoft.Maui.Controls": {
+              "target": "Package",
+              "version": "[9.0.120, )"
+            },
+            "Microsoft.NET.ILLink.Tasks": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[9.0.9, )",
+              "autoReferenced": true
+            },
+            "SQLitePCLRaw.bundle_green": {
+              "target": "Package",
+              "version": "[2.1.11, )"
+            },
+            "sqlite-net-pcl": {
+              "target": "Package",
+              "version": "[1.9.172, )"
+            }
+          },
+          "imports": [
+            "xamarinios10",
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.11, 9.0.11]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.MacCatalyst": {
+              "privateAssets": "all"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/9.0.305/PortableRuntimeIdentifierGraph.json"
         }
       },
       "runtimes": {
@@ -277,13 +233,10 @@
         "android-x64": {
           "#import": []
         },
-        "iossimulator-x64": {
+        "iossimulator-arm64": {
           "#import": []
         },
-        "maccatalyst-x64": {
-          "#import": []
-        },
-        "win10-x64": {
+        "maccatalyst-arm64": {
           "#import": []
         }
       }

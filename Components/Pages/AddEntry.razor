@@ -1,11 +1,11 @@
 ﻿@page "/add"
 @page "/edit/{Id:int}"
-@using DailyJournalApp.Models
-@using DailyJournalApp.Services
+@using RitiksJournalApp.Models
+@using RitiksJournalApp.Services
 @inject DatabaseService DbService
 @inject NavigationManager NavManager
 
-<div class="container mt-4" style="max-width: 600px;">
+<div class="container mt-4" style="max-width: 800px;">
     <div class="card shadow-lg">
         <div class="card-header bg-primary text-white">
             <h3 class="mb-0">@(Id == 0 ? "Write New Entry" : "Edit Entry")</h3>
@@ -38,7 +38,7 @@
 
                 <div class="mb-3">
                     <label class="form-label fw-bold">Journal Content</label>
-                    <InputTextArea class="form-control" @bind-Value="entryModel.Content" rows="8" placeholder="Start writing here..." style="resize: none;" />
+                    <InputTextArea class="form-control" @bind-Value="entryModel.Content" rows="12" placeholder="Start writing here..." style="resize: none;" />
                 </div>
 
                 <div class="d-flex gap-2">

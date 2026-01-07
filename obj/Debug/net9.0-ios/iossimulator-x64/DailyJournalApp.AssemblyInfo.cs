@@ -11,12 +11,12 @@
 using System;
 using System.Reflection;
 
-[assembly: System.Reflection.AssemblyCompanyAttribute("DailyJournalApp")]
+[assembly: System.Reflection.AssemblyCompanyAttribute("RitiksJournalApp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
 [assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0+34a3c018da36da0f3fdae0fd07a98e4176993bfe")]
-[assembly: System.Reflection.AssemblyProductAttribute("DailyJournalApp")]
-[assembly: System.Reflection.AssemblyTitleAttribute("DailyJournalApp")]
+[assembly: System.Reflection.AssemblyProductAttribute("RitiksJournalApp")]
+[assembly: System.Reflection.AssemblyTitleAttribute("RitiksJournalApp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
 [assembly: System.Runtime.Versioning.TargetPlatformAttribute("iOS26.0")]
 [assembly: System.Runtime.Versioning.SupportedOSPlatformAttribute("iOS15.0")]

@@ -6,11 +6,9 @@
     </div>
 
     <main>
-        <div class="top-row px-4 d-flex justify-content-between align-items-center">
-            <span class="fw-bold">My Digital Journal</span>
-
+        <div class="top-row px-4 d-flex justify-content-center align-items-center">
             <button class="btn btn-sm btn-outline-secondary" @onclick="ToggleTheme">
-                @(isDarkMode ? "☀️ Light Mode" : "🌙 Dark Mode")
+                @(isDarkMode ? "☀️ Light" : "🌙 Dark")
             </button>
         </div>
 
@@ -28,57 +26,3 @@
         isDarkMode = !isDarkMode;
     }
 }
-
-<style>
-    /* Default (Light) Variables */
-    :root {
-        --app-bg: #ffffff;
-        --app-text: #000000;
-        --card-bg: #f8f9fa;
-        --sidebar-bg: #f0f0f0;
-    }
-
-    /* Dark Mode Variables */
-    [data-theme="dark"] {
-        --app-bg: #121212; /* Very dark grey */
-        --app-text: #e0e0e0; /* Light grey text */
-        --card-bg: #1e1e1e; /* Dark cards */
-        --sidebar-bg: #000000;
-    }
-
-    /* FIX 1: Apply background to the very root (html/body) so it fills 100% */
-    html, body {
-        height: 100%;
-        margin: 0;
-        background-color: var(--app-bg) !important; /* This fixes the white bottom */
-        color: var(--app-text) !important;
-        transition: background-color 0.3s ease;
-    }
-
-    /* FIX 2: Make the main page container fill the height */
-    .page {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        background-color: var(--app-bg) !important;
-    }
-
-    main {
-        flex: 1;
-    }
-
-    /* Fix Bootstrap Cards in Dark Mode */
-    .card {
-        background-color: var(--card-bg) !important;
-        color: var(--app-text) !important;
-        border-color: #333 !important;
-    }
-
-    /* Fix Input fields in Dark Mode */
-    [data-theme="dark"] .form-control,
-    [data-theme="dark"] .form-select {
-        background-color: #2d2d2d;
-        color: #fff;
-        border-color: #444;
-    }
-</style>

@@ -6,7 +6,7 @@
 using System;
 using System.CodeDom.Compiler;
 
-namespace DailyJournalApp {
+namespace RitiksJournalApp {
 	#pragma warning disable IDE0002
 	/// <summary>
 	/// Android Resource Designer class.

@@ -1,6 +1,6 @@
 ﻿using Foundation;
 
-namespace DailyJournalApp
+namespace RitiksJournalApp
 {
     [Register("AppDelegate")]
     public class AppDelegate : MauiUIApplicationDelegate
