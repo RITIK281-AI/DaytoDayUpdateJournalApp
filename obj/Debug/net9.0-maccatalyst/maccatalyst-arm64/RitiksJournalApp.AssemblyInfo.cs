@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RitiksJournalApp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0+df093f9b79dbb5bac65d6e1026f1715ddccfde0e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0+220dfb661f3ed55c02382941cdb1fe4dcebd97f6")]
 [assembly: System.Reflection.AssemblyProductAttribute("RitiksJournalApp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RitiksJournalApp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
