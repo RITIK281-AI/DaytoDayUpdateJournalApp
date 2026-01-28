@@ -1,0 +1,119 @@
+@page "/pin-setup"
+@layout PinLayout
+@using JournalApp.Services
+@inject PinService PinService
+@inject AuthService AuthService
+@inject NavigationManager NavManager
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-icon">🔒</div>
+            <h2 class="auth-title">Secure Your Journal</h2>
+            <p class="auth-subtitle">Set up PIN protection for your personal thoughts</p>
+        </div>
+
+        <div class="form-section">
+            <label class="form-label">Default PIN</label>
+            <p class="form-hint">Using default PIN: 1234</p>
+            <input type="password" class="form-input pin-input" @bind="pin" placeholder="1234" maxlength="4" readonly />
+        </div>
+
+        <div class="form-section">
+            <label class="form-label">Confirm PIN</label>
+            <input type="password" class="form-input pin-input" @bind="confirmPin" placeholder="1234" maxlength="4" readonly />
+        </div>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-error">
+                <span class="alert-icon">⚠️</span>
+                @errorMessage
+            </div>
+        }
+
+        <div class="btn-group">
+            <button class="btn btn-primary" @onclick="SetupPin" disabled="@isSettingUp">
+                @if (isSettingUp)
+                {
+                    <span class="btn-icon">⏳</span>
+                    <span>Setting up...</span>
+                }
+                else
+                {
+                    <span class="btn-icon">🔐</span>
+                    <span>Setup PIN (1234)</span>
+                }
+            </button>
+        </div>
+
+        <div class="info-list">
+            <div class="info-item">
+                <span class="info-icon">📝</span>
+                <span class="info-text">Your journal entries will be protected</span>
+            </div>
+            <div class="info-item">
+                <span class="info-icon">🔐</span>
+                <span class="info-text">Choose any 4-digit PIN for security</span>
+            </div>
+            <div class="info-item">
+                <span class="info-icon">🛡️</span>
+                <span class="info-text">Secure local storage only</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string pin = "1234";
+    private string confirmPin = "1234";
+    private string errorMessage = string.Empty;
+    private bool isSettingUp = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Auto-setup with default PIN
+        await SetupPin();
+    }
+
+    private async Task SetupPin()
+    {
+        isSettingUp = true;
+        errorMessage = string.Empty;
+
+        if (string.IsNullOrEmpty(pin) || string.IsNullOrEmpty(confirmPin))
+        {
+            errorMessage = "Please enter both PIN fields";
+            isSettingUp = false;
+            return;
+        }
+
+        if (pin != confirmPin)
+        {
+            errorMessage = "PINs do not match";
+            isSettingUp = false;
+            return;
+        }
+
+        if (pin.Length != 4 || !pin.All(char.IsDigit))
+        {
+            errorMessage = "PIN must be exactly 4 digits";
+            isSettingUp = false;
+            return;
+        }
+
+        var success = await PinService.SetupPinAsync(pin);
+        if (success)
+        {
+            await AuthService.SetAuthenticatedAsync(true);
+            NavManager.NavigateTo("/");
+        }
+        else
+        {
+            errorMessage = "Failed to setup PIN. Please make sure you're entering exactly 4 digits and try again.";
+        }
+        
+        isSettingUp = false;
+    }
+}
+

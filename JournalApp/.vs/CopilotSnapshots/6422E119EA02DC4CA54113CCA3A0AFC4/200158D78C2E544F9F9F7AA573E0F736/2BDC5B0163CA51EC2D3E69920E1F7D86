@@ -1,0 +1,612 @@
+﻿@page "/entry/{date:datetime}"
+@using JournalApp.Models
+@using JournalApp.Services
+@inject DatabaseService DbService
+@inject NavigationManager NavManager
+@inject PdfService PdfService
+
+<div class="entry-preview-container">
+    @if (isLoading)
+    {
+        <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Loading entry...</p>
+        </div>
+    }
+    else if (entry != null)
+    {
+        <div class="entry-preview-card fade-in">
+            <!-- Entry Header -->
+            <div class="entry-header">
+                <div class="date-section">
+                    <div class="date-badge">
+                        <span class="date-day">@entry.Date.ToString("dd")</span>
+                        <span class="date-month">@entry.Date.ToString("MMM")</span>
+                        <span class="date-year">@entry.Date.ToString("yyyy")</span>
+                    </div>
+                    <div class="date-info">
+                        <h2 class="entry-date">@entry.Date.ToString("dddd, MMMM dd, yyyy")</h2>
+                        <p class="entry-time">Created at @entry.CreatedAt.ToString("h:mm tt")</p>
+                    </div>
+                </div>
+                <div class="mood-section">
+                    <div class="mood-indicator @GetMoodClass(entry.PrimaryMood)">
+                        <span class="mood-emoji">@GetMoodEmoji(entry.PrimaryMood)</span>
+                        <span class="mood-text">@entry.PrimaryMood</span>
+                    </div>
+                    @if (entry.UpdatedAt.Date != entry.CreatedAt.Date)
+                    {
+                        <span class="updated-badge">Updated</span>
+                    }
+                </div>
+            </div>
+
+            <!-- Entry Content -->
+            <div class="entry-content-section">
+                <h1 class="entry-title">@entry.Title</h1>
+                <div class="entry-content">
+                    <p>@entry.Content</p>
+                </div>
+            </div>
+
+            <!-- Tags Section -->
+            @if (!string.IsNullOrEmpty(entry.Tags))
+            {
+                <div class="tags-section">
+                    <h3 class="tags-title">Tags</h3>
+                    <div class="tags-container">
+                        @foreach (var tag in entry.Tags.Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)))
+                        {
+                            <span class="tag-chip">#@tag</span>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Entry Actions -->
+            <div class="entry-actions">
+                <button class="action-btn primary" @onclick="EditEntry">
+                    <span class="btn-icon">✏️</span>
+                    Edit Entry
+                </button>
+                <button class="action-btn secondary" @onclick="ExportToPdf">
+                    <span class="btn-icon">📄</span>
+                    Export PDF
+                </button>
+                <button class="action-btn secondary" @onclick="GoToCalendar">
+                    <span class="btn-icon">📅</span>
+                    Back to Calendar
+                </button>
+                <button class="action-btn danger" @onclick="DeleteEntry">
+                    <span class="btn-icon">🗑️</span>
+                    Delete
+                </button>
+            </div>
+
+            <!-- Entry Metadata -->
+            <div class="entry-metadata">
+                <div class="metadata-item">
+                    <span class="metadata-label">Word Count:</span>
+                    <span class="metadata-value">@wordCount words</span>
+                </div>
+                <div class="metadata-item">
+                    <span class="metadata-label">Character Count:</span>
+                    <span class="metadata-value">@characterCount characters</span>
+                </div>
+                <div class="metadata-item">
+                    <span class="metadata-label">Reading Time:</span>
+                    <span class="metadata-value">~@readingTime min read</span>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="no-entry-state">
+            <div class="no-entry-icon">📝</div>
+            <h2 class="no-entry-title">No Entry Found</h2>
+            <p class="no-entry-description">There's no journal entry for @Date.ToString("MMMM dd, yyyy")</p>
+            <div class="no-entry-actions">
+                <button class="action-btn primary" @onclick="CreateEntry">
+                    <span class="btn-icon">✨</span>
+                    Create Entry
+                </button>
+                <button class="action-btn secondary" @onclick="GoToCalendar">
+                    <span class="btn-icon">📅</span>
+                    Back to Calendar
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public DateTime Date { get; set; }
+    private JournalEntry? entry;
+    private bool isLoading = true;
+    private int wordCount;
+    private int characterCount;
+    private int readingTime;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEntry();
+        CalculateStats();
+        isLoading = false;
+    }
+
+    private async Task LoadEntry()
+    {
+        var entries = await DbService.GetEntriesAsync();
+        entry = entries.FirstOrDefault(e => e.Date.Date == Date.Date);
+    }
+
+    private void CalculateStats()
+    {
+        if (entry != null)
+        {
+            var words = entry.Content.Split(new[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+            wordCount = words.Length;
+            characterCount = entry.Content.Length;
+            readingTime = Math.Max(1, (int)Math.Ceiling(wordCount / 200.0)); // Average reading speed: 200 words/min
+        }
+    }
+
+    private void EditEntry()
+    {
+        if (entry != null)
+        {
+            NavManager.NavigateTo($"/edit/{entry.Id}");
+        }
+    }
+
+    private async Task ExportToPdf()
+    {
+        if (entry != null)
+        {
+            try
+            {
+                var pdfBytes = await PdfService.GenerateEntryPdfAsync(entry);
+                await SavePdfFile(pdfBytes, $"Journal_Entry_{entry.Date:yyyy-MM-dd}.txt");
+            }
+            catch
+            {
+                // Handle error - could show a message to user
+                // For now, we'll just continue
+            }
+        }
+    }
+
+    private async Task SavePdfFile(byte[] pdfBytes, string fileName)
+    {
+        try
+        {
+            var downloadsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+            var filePath = Path.Combine(downloadsPath, fileName);
+            
+            await File.WriteAllBytesAsync(filePath, pdfBytes);
+            
+            // Show success message to user with actual device path
+            if (Application.Current?.MainPage != null)
+            {
+                await Application.Current.MainPage.DisplayAlert(
+                    "Export Successful", 
+                    $"File saved to:\n{filePath}", 
+                    "OK"
+                );
+            }
+        }
+        catch
+        {
+            if (Application.Current?.MainPage != null)
+            {
+                await Application.Current.MainPage.DisplayAlert(
+                    "Export Failed", 
+                    "Could not save the file.", 
+                    "OK"
+                );
+            }
+        }
+    }
+
+    private void CreateEntry()
+    {
+        NavManager.NavigateTo($"/add?date={Date:yyyy-MM-dd}");
+    }
+
+    private void GoToCalendar()
+    {
+        NavManager.NavigateTo("/calendar");
+    }
+
+    private async Task DeleteEntry()
+    {
+        if (entry == null)
+        {
+            return;
+        }
+
+        // Show confirmation dialog
+        if (Application.Current?.MainPage == null)
+        {
+            return;
+        }
+
+        bool confirm = await Application.Current.MainPage.DisplayAlert(
+            "Delete Entry?",
+            $"Are you sure you want to delete this entry from {entry.Date:MMMM dd, yyyy}? This action cannot be undone.",
+            "Delete",
+            "Cancel"
+        );
+
+        if (confirm)
+        {
+            try
+            {
+                // Delete the entry from database
+                await DbService.DeleteEntryAsync(entry.Id);
+                
+                // Show success message
+                await Application.Current.MainPage.DisplayAlert(
+                    "Entry Deleted",
+                    "Your journal entry has been deleted successfully.",
+                    "OK"
+                );
+                
+                // Navigate back to calendar
+                NavManager.NavigateTo("/calendar");
+            }
+            catch (Exception ex)
+            {
+                // Show error message
+                await Application.Current.MainPage.DisplayAlert(
+                    "Delete Failed",
+                    $"Could not delete the entry: {ex.Message}",
+                    "OK"
+                );
+            }
+        }
+    }
+
+    private string GetMoodEmoji(string mood) => mood switch
+    {
+        "Happy" => "😊",
+        "Excited" => "🤩",
+        "Grateful" => "🙏",
+        "Neutral" => "😐",
+        "Sad" => "😢",
+        "Stressed" => "😫",
+        _ => "😐"
+    };
+
+    private string GetMoodClass(string mood) => mood switch
+    {
+        "Happy" => "mood-positive",
+        "Excited" => "mood-positive", 
+        "Grateful" => "mood-positive",
+        "Neutral" => "mood-neutral",
+        "Sad" => "mood-negative",
+        "Stressed" => "mood-negative",
+        _ => "mood-neutral"
+    };
+}
+
+<style>
+    .entry-preview-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+        min-height: 100vh;
+    }
+
+    .entry-preview-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 1.5rem;
+        overflow: hidden;
+        box-shadow: 0 8px 32px var(--shadow-color);
+    }
+
+    .entry-header {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+        color: white;
+        padding: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .date-section {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    .date-badge {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 1rem;
+        padding: 1rem;
+        text-align: center;
+        min-width: 80px;
+        backdrop-filter: blur(10px);
+    }
+
+    .date-day {
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1;
+        display: block;
+    }
+
+    .date-month {
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        opacity: 0.9;
+        display: block;
+        margin-top: 0.25rem;
+    }
+
+    .date-year {
+        font-size: 0.75rem;
+        opacity: 0.8;
+        display: block;
+    }
+
+    .date-info {
+        flex: 1;
+    }
+
+    .entry-date {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+        line-height: 1.2;
+    }
+
+    .entry-time {
+        font-size: 0.875rem;
+        opacity: 0.8;
+        margin: 0.25rem 0 0 0;
+    }
+
+    .mood-section {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .mood-indicator {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 2rem;
+        padding: 0.75rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        backdrop-filter: blur(10px);
+    }
+
+    .mood-emoji {
+        font-size: 1.5rem;
+    }
+
+    .mood-text {
+        font-weight: 600;
+    }
+
+    .updated-badge {
+        background: rgba(255, 255, 255, 0.3);
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .entry-content-section {
+        padding: 2.5rem;
+    }
+
+    .entry-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-color);
+        margin-bottom: 1.5rem;
+        line-height: 1.2;
+    }
+
+    .entry-content {
+        color: var(--text-color);
+        line-height: 1.8;
+        font-size: 1.1rem;
+        white-space: pre-wrap;
+        margin-bottom: 2rem;
+    }
+
+    .tags-section {
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .tags-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 1rem;
+    }
+
+    .tags-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .tag-chip {
+        background: var(--primary-light);
+        color: var(--primary-color);
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        border: 1px solid var(--primary-color);
+    }
+
+    .entry-actions {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid var(--border-color);
+        flex-wrap: wrap;
+    }
+
+    .action-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+        font-size: 1rem;
+    }
+
+    .action-btn.primary {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .action-btn.primary:hover {
+        background: var(--primary-hover);
+        transform: translateY(-2px);
+    }
+
+    .action-btn.secondary {
+        background: var(--secondary-color);
+        color: white;
+    }
+
+    .action-btn.secondary:hover {
+        background: #475569;
+        transform: translateY(-2px);
+    }
+
+    .action-btn.danger {
+        background: var(--danger-color);
+        color: white;
+    }
+
+    .action-btn.danger:hover {
+        background: #dc2626;
+        transform: translateY(-2px);
+    }
+
+    .entry-metadata {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        padding: 0 2.5rem 2.5rem;
+    }
+
+    .metadata-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+    }
+
+    .metadata-label {
+        color: var(--muted-text);
+        font-weight: 500;
+    }
+
+    .metadata-value {
+        color: var(--text-color);
+        font-weight: 600;
+    }
+
+    /* Loading State */
+    .loading-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 50vh;
+        color: var(--text-color);
+    }
+
+    .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid var(--border-color);
+        border-top: 4px solid var(--primary-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 1rem;
+    }
+
+    /* No Entry State */
+    .no-entry-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: var(--card-bg);
+        border: 2px dashed var(--border-color);
+        border-radius: 1.5rem;
+        margin: 2rem 0;
+    }
+
+    .no-entry-icon {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        display: block;
+    }
+
+    .no-entry-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-color);
+        margin-bottom: 1rem;
+    }
+
+    .no-entry-description {
+        color: var(--muted-text);
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .no-entry-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Dark Mode Enhancements */
+    .dark-mode .tag-chip {
+        background: rgba(99, 102, 241, 0.2);
+        color: #818cf8;
+        border-color: #818cf8;
+    }
+
+    .dark-mode .metadata-item {
+        background: var(--card-bg);
+        border-color: var(--border-color);
+    }
+
+    .dark-mode .no-entry-state {
+        background: var(--card-bg);
+        border-color: var(--border-color);
+    }
+</style>

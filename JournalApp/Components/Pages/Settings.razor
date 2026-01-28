@@ -1,0 +1,212 @@
+@page "/settings"
+@layout MainLayout
+@using JournalApp.Services
+@inject PinService PinService
+@inject NavigationManager NavManager
+
+<div class="settings-container">
+    <div class="settings-card">
+        <div class="settings-header">
+            <h2 class="settings-title">Settings</h2>
+            <p class="settings-subtitle">Manage your journal preferences</p>
+        </div>
+
+        <div class="settings-section">
+            <h3 class="section-title">Security</h3>
+            
+            @if (isPinSetup)
+            {
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">Change PIN</div>
+                        <div class="setting-description">Update your 4-digit security PIN</div>
+                    </div>
+                    <button class="setting-btn" @onclick="ShowChangePin">Change</button>
+                </div>
+            }
+            else
+            {
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">Add PIN</div>
+                        <div class="setting-description">Set up 4-digit PIN protection for your journal</div>
+                    </div>
+                    <button class="setting-btn" @onclick="ShowAddPin">Add PIN</button>
+                </div>
+            }
+        </div>
+
+        @if (showChangePin)
+        {
+            <div class="modal-overlay">
+                <div class="modal-content">
+                    <h3 class="modal-title">@modalTitle</h3>
+                    
+                    @if (isPinSetup)
+                    {
+                        <div class="form-section">
+                            <label class="form-label">Current PIN</label>
+                            <input type="password" class="form-input pin-input" @bind="currentPin" placeholder="Enter current PIN" maxlength="4" />
+                        </div>
+                    }
+
+                    <div class="form-section">
+                        <label class="form-label">New PIN</label>
+                        <input type="password" class="form-input pin-input" @bind="newPin" placeholder="Enter new 4-digit PIN" maxlength="4" />
+                    </div>
+
+                    <div class="form-section">
+                        <label class="form-label">Confirm New PIN</label>
+                        <input type="password" class="form-input pin-input" @bind="confirmNewPin" placeholder="Confirm new PIN" maxlength="4" />
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-error">
+                            <span class="alert-icon">⚠️</span>
+                            @errorMessage
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(successMessage))
+                    {
+                        <div class="alert alert-success">
+                            <span class="alert-icon">✅</span>
+                            @successMessage
+                        </div>
+                    }
+
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" @onclick="CancelChangePin">Cancel</button>
+                        <button class="btn btn-primary" @onclick="SavePin">@modalButtonText</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private bool showChangePin = false;
+    private bool isPinSetup = false;
+    private string modalTitle = string.Empty;
+    private string modalButtonText = string.Empty;
+    private string currentPin = string.Empty;
+    private string newPin = string.Empty;
+    private string confirmNewPin = string.Empty;
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isPinSetup = await PinService.IsPinSetupAsync();
+    }
+
+    private void ShowChangePin()
+    {
+        showChangePin = true;
+        modalTitle = "Change PIN";
+        modalButtonText = "Update PIN";
+        errorMessage = string.Empty;
+        successMessage = string.Empty;
+        currentPin = string.Empty;
+        newPin = string.Empty;
+        confirmNewPin = string.Empty;
+    }
+
+    private void ShowAddPin()
+    {
+        showChangePin = true;
+        modalTitle = "Add PIN";
+        modalButtonText = "Add PIN";
+        errorMessage = string.Empty;
+        successMessage = string.Empty;
+        currentPin = string.Empty;
+        newPin = string.Empty;
+        confirmNewPin = string.Empty;
+    }
+
+    private void CancelChangePin()
+    {
+        showChangePin = false;
+        errorMessage = string.Empty;
+        successMessage = string.Empty;
+        currentPin = string.Empty;
+        newPin = string.Empty;
+        confirmNewPin = string.Empty;
+    }
+
+    private async Task SavePin()
+    {
+        errorMessage = string.Empty;
+        successMessage = string.Empty;
+
+        if (isPinSetup)
+        {
+            // Change PIN flow
+            if (string.IsNullOrEmpty(currentPin) || string.IsNullOrEmpty(newPin) || string.IsNullOrEmpty(confirmNewPin))
+            {
+                errorMessage = "Please fill in all PIN fields";
+                return;
+            }
+        }
+        else
+        {
+            // Add PIN flow
+            if (string.IsNullOrEmpty(newPin) || string.IsNullOrEmpty(confirmNewPin))
+            {
+                errorMessage = "Please fill in all PIN fields";
+                return;
+            }
+        }
+
+        if (newPin != confirmNewPin)
+        {
+            errorMessage = "New PINs do not match";
+            return;
+        }
+
+        if (newPin.Length != 4 || !newPin.All(char.IsDigit))
+        {
+            errorMessage = "New PIN must be exactly 4 digits";
+            return;
+        }
+
+        bool success;
+        if (isPinSetup)
+        {
+            success = await PinService.ChangePinAsync(currentPin, newPin);
+            if (success)
+            {
+                successMessage = "PIN changed successfully!";
+            }
+            else
+            {
+                errorMessage = "Failed to change PIN. Please check your current PIN and try again.";
+            }
+        }
+        else
+        {
+            success = await PinService.SetupPinAsync(newPin);
+            if (success)
+            {
+                successMessage = "PIN added successfully!";
+                isPinSetup = true; // Update the state
+            }
+            else
+            {
+                errorMessage = "Failed to add PIN. Please try again.";
+            }
+        }
+
+        if (success)
+        {
+            await Task.Delay(2000);
+            showChangePin = false;
+            currentPin = string.Empty;
+            newPin = string.Empty;
+            confirmNewPin = string.Empty;
+        }
+    }
+}
+

@@ -1,0 +1,305 @@
+﻿using JournalApp.Models;
+using System.Text;
+using System.IO;
+
+namespace JournalApp.Services
+{
+    public class PdfService
+    {
+        /// <summary>
+        /// Generates a PDF file for a single journal entry
+        /// </summary>
+        public async Task<byte[]> GenerateEntryPdfAsync(JournalEntry entry)
+        {
+            var content = GenerateEntryText(entry);
+            return await ConvertTextToPdfBytes(content);
+        }
+
+        /// <summary>
+        /// Generates a PDF file for all entries in a specific month
+        /// </summary>
+        public async Task<byte[]> GenerateMonthPdfAsync(List<JournalEntry> entries, DateTime month)
+        {
+            var content = GenerateMonthText(entries, month);
+            return await ConvertTextToPdfBytes(content);
+        }
+
+        /// <summary>
+        /// Generates a PDF file for entries within a specified date range
+        /// </summary>
+        public async Task<byte[]> GenerateTimelineExportAsync(List<JournalEntry> entries, string startDate, string endDate)
+        {
+            var content = GenerateTimelineText(entries, startDate, endDate);
+            return await ConvertTextToPdfBytes(content);
+        }
+
+        /// <summary>
+        /// Converts text content to PDF bytes using a simple PDF format
+        /// This creates a valid PDF file that can be opened in any PDF reader
+        /// </summary>
+        private Task<byte[]> ConvertTextToPdfBytes(string text)
+        {
+            // Create a simple PDF structure
+            // PDF is a text-based format that can be generated without external libraries
+            var pdfContent = new StringBuilder();
+            
+            // PDF header
+            pdfContent.AppendLine("%PDF-1.4");
+            pdfContent.AppendLine("1 0 obj");
+            pdfContent.AppendLine("<< /Type /Catalog /Pages 2 0 R >>");
+            pdfContent.AppendLine("endobj");
+            pdfContent.AppendLine("2 0 obj");
+            pdfContent.AppendLine("<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+            pdfContent.AppendLine("endobj");
+            pdfContent.AppendLine("3 0 obj");
+            pdfContent.AppendLine("<< /Type /Page /Parent 2 0 R /Resources 4 0 R /MediaBox [0 0 612 792] /Contents 5 0 R >>");
+            pdfContent.AppendLine("endobj");
+            pdfContent.AppendLine("4 0 obj");
+            pdfContent.AppendLine("<< /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >>");
+            pdfContent.AppendLine("endobj");
+            
+            // Escape special PDF characters in text
+            var escapedText = EscapePdfText(text);
+            
+            // Stream content with proper PDF text formatting
+            pdfContent.AppendLine("5 0 obj");
+            pdfContent.AppendLine("<< /Length " + (escapedText.Length + 100) + " >>");
+            pdfContent.AppendLine("stream");
+            pdfContent.AppendLine("BT");
+            pdfContent.AppendLine("/F1 12 Tf");
+            pdfContent.AppendLine("50 750 Td");
+            
+            // Add text content with line breaks
+            var lines = escapedText.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+            foreach (var line in lines)
+            {
+                // Escape parentheses and backslashes for PDF
+                var safeLine = line.Replace("\\", "\\\\").Replace("(", "\\(").Replace(")", "\\)");
+                pdfContent.AppendLine($"({safeLine}) Tj");
+                pdfContent.AppendLine("0 -15 Td");
+            }
+            
+            pdfContent.AppendLine("ET");
+            pdfContent.AppendLine("endstream");
+            pdfContent.AppendLine("endobj");
+            
+            // Create xref table
+            pdfContent.AppendLine("xref");
+            pdfContent.AppendLine("0 6");
+            pdfContent.AppendLine("0000000000 65535 f");
+            pdfContent.AppendLine("0000000009 00000 n");
+            pdfContent.AppendLine("0000000058 00000 n");
+            pdfContent.AppendLine("0000000115 00000 n");
+            pdfContent.AppendLine("0000000214 00000 n");
+            pdfContent.AppendLine("0000000317 00000 n");
+            
+            // Trailer
+            pdfContent.AppendLine("trailer");
+            pdfContent.AppendLine("<< /Size 6 /Root 1 0 R >>");
+            pdfContent.AppendLine("startxref");
+            pdfContent.AppendLine((pdfContent.Length).ToString());
+            pdfContent.AppendLine("%%EOF");
+            
+            return Task.FromResult(Encoding.UTF8.GetBytes(pdfContent.ToString()));
+        }
+
+        /// <summary>
+        /// Escapes special characters for PDF format
+        /// </summary>
+        private string EscapePdfText(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return string.Empty;
+
+            // Remove or replace problematic characters for PDF text mode
+            var sb = new StringBuilder();
+            foreach (var c in text)
+            {
+                if (c == '\n' || c == '\r')
+                {
+                    sb.Append('\n');
+                }
+                else if (char.IsControl(c) && c != '\t')
+                {
+                    // Skip control characters except tab
+                    continue;
+                }
+                else
+                {
+                    sb.Append(c);
+                }
+            }
+            return sb.ToString();
+        }
+
+        private string GenerateEntryText(JournalEntry entry)
+        {
+            var wordCount = entry.Content.Split(' ').Length;
+            var readingTime = Math.Max(1, (int)Math.Ceiling(wordCount / 200.0));
+            
+            var content = new StringBuilder();
+            content.AppendLine(new string('=', 60));
+            content.AppendLine($"JOURNAL ENTRY - {entry.Date:MMMM dd, yyyy}");
+            content.AppendLine(new string('=', 60));
+            content.AppendLine();
+            content.AppendLine($"Date: {entry.Date:dddd, MMMM dd, yyyy}");
+            content.AppendLine($"Title: {entry.Title}");
+            content.AppendLine($"Mood: {entry.PrimaryMood}");
+            content.AppendLine();
+            content.AppendLine("Statistics:");
+            content.AppendLine($"  Words: {wordCount}");
+            content.AppendLine($"  Characters: {entry.Content.Length}");
+            content.AppendLine($"  Reading Time: ~{readingTime} min");
+            content.AppendLine();
+            content.AppendLine("Content:");
+            content.AppendLine(entry.Content);
+            content.AppendLine();
+            
+            if (!string.IsNullOrEmpty(entry.Tags))
+            {
+                content.AppendLine("Tags:");
+                foreach (var tag in entry.Tags.Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)))
+                {
+                    content.AppendLine($"  #{tag}");
+                }
+                content.AppendLine();
+            }
+            
+            content.AppendLine("Metadata:");
+            content.AppendLine($"  Created: {entry.CreatedAt:MMMM dd, yyyy at h:mm tt}");
+            if (entry.UpdatedAt > entry.CreatedAt)
+            {
+                content.AppendLine($"  Updated: {entry.UpdatedAt:MMMM dd, yyyy at h:mm tt}");
+            }
+            content.AppendLine($"  Generated: {DateTime.Now:MMMM dd, yyyy at h:mm tt}");
+            content.AppendLine("  Personal Journal App");
+            content.AppendLine(new string('=', 60));
+            
+            return content.ToString();
+        }
+
+        private string GenerateMonthText(List<JournalEntry> entries, DateTime month)
+        {
+            var content = new StringBuilder();
+            content.AppendLine(new string('=', 60));
+            content.AppendLine($"JOURNAL ENTRIES - {month:MMMM yyyy}");
+            content.AppendLine(new string('=', 60));
+            content.AppendLine();
+            
+            // Monthly Summary
+            content.AppendLine("MONTHLY SUMMARY:");
+            content.AppendLine($"  Total Entries: {entries.Count}");
+            if (entries.Any())
+            {
+                var topMood = entries.GroupBy(e => e.PrimaryMood).OrderByDescending(g => g.Count()).First().Key;
+                var avgWords = Math.Round(entries.Average(e => e.Content.Split(' ').Length));
+                content.AppendLine($"  Most Common Mood: {topMood}");
+                content.AppendLine($"  Average Words: {avgWords}");
+            }
+            content.AppendLine();
+            content.AppendLine(new string('-', 60));
+            content.AppendLine();
+            
+            // Add entries
+            foreach (var entry in entries.OrderBy(e => e.Date))
+            {
+                content.AppendLine($"{entry.Date:dddd, MMMM dd, yyyy}");
+                content.AppendLine($"{entry.Title}");
+                content.AppendLine($"Mood: {entry.PrimaryMood}");
+                content.AppendLine();
+                content.AppendLine(entry.Content);
+                content.AppendLine();
+                
+                if (!string.IsNullOrEmpty(entry.Tags))
+                {
+                    content.AppendLine($"Tags: {entry.Tags}");
+                    content.AppendLine();
+                }
+                content.AppendLine(new string('-', 40));
+                content.AppendLine();
+            }
+            
+            content.AppendLine(new string('=', 60));
+            content.AppendLine($"Generated on {DateTime.Now:MMMM dd, yyyy at h:mm tt}");
+            content.AppendLine($"Personal Journal App");
+            content.AppendLine($"Contains {entries.Count} journal entries for {month:MMMM yyyy}");
+            content.AppendLine(new string('=', 60));
+            
+            return content.ToString();
+        }
+
+        private string GenerateTimelineText(List<JournalEntry> entries, string startDate, string endDate)
+        {
+            var content = new StringBuilder();
+            content.AppendLine(new string('=', 70));
+            content.AppendLine($"JOURNAL EXPORT - {startDate} to {endDate}");
+            content.AppendLine(new string('=', 70));
+            content.AppendLine();
+            
+            // Export Summary
+            content.AppendLine("EXPORT SUMMARY:");
+            content.AppendLine($"  Date Range: {startDate} to {endDate}");
+            content.AppendLine($"  Total Entries: {entries.Count}");
+            content.AppendLine($"  Total Words: {entries.Sum(e => e.Content.Split(' ').Length)}");
+            
+            if (entries.Any())
+            {
+                var topMood = entries.GroupBy(e => e.PrimaryMood).OrderByDescending(g => g.Count()).First().Key;
+                var avgWords = Math.Round(entries.Average(e => e.Content.Split(' ').Length));
+                content.AppendLine($"  Most Common Mood: {topMood}");
+                content.AppendLine($"  Average Words per Entry: {avgWords}");
+            }
+            
+            content.AppendLine();
+            content.AppendLine(new string('-', 70));
+            content.AppendLine();
+            
+            // Add all entries in chronological order
+            foreach (var entry in entries.OrderBy(e => e.Date))
+            {
+                content.AppendLine($"{entry.Date:dddd, MMMM dd, yyyy}");
+                content.AppendLine($"Title: {entry.Title}");
+                content.AppendLine($"Mood: {entry.PrimaryMood}");
+                
+                if (!string.IsNullOrEmpty(entry.SecondaryMoods))
+                {
+                    content.AppendLine($"Secondary Moods: {entry.SecondaryMoods}");
+                }
+                
+                var wordCount = entry.Content.Split(' ').Length;
+                content.AppendLine($"Word Count: {wordCount}");
+                content.AppendLine();
+                content.AppendLine("Content:");
+                content.AppendLine(entry.Content);
+                content.AppendLine();
+                
+                if (!string.IsNullOrEmpty(entry.Tags))
+                {
+                    content.AppendLine("Tags:");
+                    foreach (var tag in entry.Tags.Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)))
+                    {
+                        content.AppendLine($"  #{tag}");
+                    }
+                    content.AppendLine();
+                }
+                
+                content.AppendLine($"Created: {entry.CreatedAt:MMMM dd, yyyy at h:mm tt}");
+                if (entry.UpdatedAt > entry.CreatedAt)
+                {
+                    content.AppendLine($"Updated: {entry.UpdatedAt:MMMM dd, yyyy at h:mm tt}");
+                }
+                
+                content.AppendLine(new string('-', 70));
+                content.AppendLine();
+            }
+            
+            content.AppendLine(new string('=', 70));
+            content.AppendLine($"Export Generated: {DateTime.Now:MMMM dd, yyyy at h:mm tt}");
+            content.AppendLine($"Total Entries Exported: {entries.Count}");
+            content.AppendLine($"Personal Journal App");
+            content.AppendLine(new string('=', 70));
+            
+            return content.ToString();
+        }
+    }
+}

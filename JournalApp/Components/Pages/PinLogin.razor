@@ -1,0 +1,259 @@
+@page "/pin-login"
+@layout PinLayout
+@using JournalApp.Services
+@inject PinService PinService
+@inject AuthService AuthService
+@inject NavigationManager NavManager
+
+<div class="pin-login-container">
+    <div class="pin-card">
+        <div class="pin-header">
+            <div class="pin-icon">🔐</div>
+            <h2 class="pin-title">Welcome Back</h2>
+            <p class="pin-subtitle">Enter your PIN to access your journal</p>
+        </div>
+
+        <div class="pin-form">
+            <div class="form-section">
+                <label class="form-label">Enter PIN</label>
+                <input type="password" class="pin-input" @bind="pin" placeholder="••••" maxlength="4" @onkeypress="HandleKeyPress" />
+            </div>
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="error-message">
+                    <span class="error-icon">⚠️</span>
+                    @errorMessage
+                </div>
+            }
+
+            <div class="pin-actions">
+                <button class="pin-btn primary" @onclick="Login">
+                    <span class="btn-icon">🔓</span>
+                    Unlock Journal
+                </button>
+            </div>
+        </div>
+
+        <div class="pin-footer">
+            <div class="footer-text">
+                <span class="footer-icon">💡</span>
+                <span class="footer-message">Your journal is securely protected</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string pin = string.Empty;
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check if PIN is already setup
+        var isSetup = await PinService.IsPinSetupAsync();
+        if (!isSetup)
+        {
+            NavManager.NavigateTo("/pin-setup");
+            return;
+        }
+
+        // Check if already authenticated (session)
+        if (await AuthService.IsAuthenticatedAsync())
+        {
+            NavManager.NavigateTo("/");
+        }
+    }
+
+    private async Task Login()
+    {
+        errorMessage = string.Empty;
+
+        if (string.IsNullOrEmpty(pin))
+        {
+            errorMessage = "Please enter your PIN";
+            return;
+        }
+
+        var isValid = await PinService.ValidatePinAsync(pin);
+        if (isValid)
+        {
+            // Set authentication session
+            await AuthService.SetAuthenticatedAsync(true);
+            NavManager.NavigateTo("/");
+        }
+        else
+        {
+            errorMessage = "Invalid PIN. Please try again.";
+            pin = string.Empty;
+        }
+    }
+
+    private void HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            _ = Login();
+        }
+    }
+}
+
+<style>
+    .pin-login-container {
+        min-height: 100vh;
+        background: var(--bg-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+    }
+
+    .pin-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        padding: 3rem;
+        max-width: 400px;
+        width: 100%;
+        box-shadow: 0 20px 40px var(--shadow-color);
+    }
+
+    .pin-header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+
+    .pin-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    .pin-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .pin-subtitle {
+        color: var(--muted-text);
+        font-size: 1rem;
+        margin: 0;
+    }
+
+    .pin-form {
+        margin-bottom: 2rem;
+    }
+
+    .form-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .pin-input {
+        width: 100%;
+        padding: 1rem;
+        font-size: 1.5rem;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        background: var(--card-bg);
+        color: var(--text-color);
+        text-align: center;
+        letter-spacing: 0.8rem;
+        transition: all 0.2s ease;
+    }
+
+    .pin-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(var(--primary-color), 0.1);
+    }
+
+    .error-message {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+        padding: 0.75rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .error-icon {
+        font-size: 1.2rem;
+    }
+
+    .pin-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .pin-btn {
+        flex: 1;
+        padding: 1rem;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .pin-btn.primary {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .pin-btn.primary:hover {
+        background: var(--primary-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px var(--shadow-color);
+    }
+
+    .btn-icon {
+        font-size: 1.1rem;
+    }
+
+    .pin-footer {
+        border-top: 1px solid var(--border-color);
+        padding-top: 1.5rem;
+        text-align: center;
+    }
+
+    .footer-text {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        color: var(--muted-text);
+        font-size: 0.9rem;
+    }
+
+    .footer-icon {
+        font-size: 1rem;
+    }
+
+    .footer-message {
+        font-style: italic;
+    }
+
+    /* Dark mode enhancements */
+    .dark-mode .error-message {
+        background: rgba(239, 68, 68, 0.2);
+        color: #f87171;
+    }
+</style>

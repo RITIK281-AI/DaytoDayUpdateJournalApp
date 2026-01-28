@@ -1,0 +1,1406 @@
+﻿@page "/calendar"
+@using JournalApp.Models
+@using JournalApp.Services
+@inject DatabaseService DbService
+@inject NavigationManager NavManager
+@inject PdfService PdfService
+
+    <div class="container mt-4 mb-5">
+    <div class="calendar-header mb-4">
+        <div class="header-content">
+            <h1 class="page-title">Calendar View</h1>
+            <p class="page-subtitle">Navigate through your journal entries</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-secondary" @onclick="ShowExportDialog">
+                <span class="btn-icon">📥</span>
+                Export
+            </button>
+        </div>
+    </div>
+
+    <div class="calendar-container fade-in">
+        <div class="calendar-header">
+            <div class="calendar-nav">
+                <button class="calendar-nav-btn" @onclick="PreviousMonth">
+                    ←
+                </button>
+            </div>
+            <h2 class="calendar-title">@currentMonth.ToString("MMMM yyyy")</h2>
+            <div class="calendar-nav">
+                <button class="calendar-nav-btn" @onclick="NextMonth">
+                    →
+                </button>
+            </div>
+        </div>
+
+        <div class="calendar-grid">
+            <!-- Weekday headers -->
+            @foreach (var weekday in weekDays)
+            {
+                <div class="calendar-weekday">@weekday</div>
+            }
+            
+            <!-- Calendar days -->
+            @foreach (var day in calendarDays)
+            {
+                <div class="calendar-day @(GetDayClasses(day))" @onclick="() => ViewEntry(day.Date)">
+                    <span class="day-number">@day.Date.Day</span>
+                    @if (day.HasEntry)
+                    {
+                        <div class="entry-indicator">•</div>
+                    }
+                </div>
+            }
+        </div>
+
+        @if (selectedDate != null)
+        {
+            <div class="selected-date-info mt-4">
+                <h3 class="selected-date-title">
+                    @selectedDate.Value.ToString("dddd, MMMM dd, yyyy")
+                </h3>
+                @if (selectedEntry != null)
+                {
+                    <div class="selected-entry-card">
+                        <div class="entry-header">
+                            <div class="entry-mood @GetMoodClass(selectedEntry.PrimaryMood)">
+                                <span class="mood-emoji">@GetMoodEmoji(selectedEntry.PrimaryMood)</span>
+                                <span class="mood-text">@selectedEntry.PrimaryMood</span>
+                            </div>
+                        </div>
+                        <div class="entry-body">
+                            <h4 class="entry-title">@selectedEntry.Title</h4>
+                            <p class="entry-content">
+                                @(selectedEntry.Content.Length > 200 ? selectedEntry.Content.Substring(0, 200) + "..." : selectedEntry.Content)
+                            </p>
+                            @if (!string.IsNullOrEmpty(selectedEntry.Tags))
+                            {
+                                <div class="entry-tags">
+                                    @foreach (var tag in selectedEntry.Tags.Split(',').Take(3))
+                                    {
+                                        <span class="tag-chip">@tag.Trim()</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                        <div class="entry-actions">
+                            <button class="btn btn-primary" @onclick="() => EditEntry(selectedEntry.Id)">
+                                <span class="btn-icon">✏️</span>
+                                Edit
+                            </button>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="no-entry-card">
+                        <div class="no-entry-icon">📝</div>
+                        <h4>No entry for this date</h4>
+                        <p>Click "New Entry" to start writing for this day</p>
+                        <button class="btn btn-primary" @onclick="() => CreateEntry(selectedDate.Value)">
+                            <span class="btn-icon">✨</span>
+                            New Entry
+                        </button>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Statistics Summary -->
+    <div class="stats-summary mt-5">
+        <h3 class="stats-title">This Month's Summary</h3>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">@monthlyStats.TotalEntries</div>
+                <div class="stat-label">Total Entries</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">@monthlyStats.MostCommonMood</div>
+                <div class="stat-label">Most Common Mood</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">@monthlyStats.WritingStreak</div>
+                <div class="stat-label">Current Streak</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">@monthlyStats.AverageWords</div>
+                <div class="stat-label">Avg. Words/Entry</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Entry Options Modal for Today's Entry -->
+    @if (showOptionsModal && selectedEntry != null)
+    {
+        <div class="modal-overlay" @onclick="CloseOptions">
+            <div class="modal-content" @onclick.stop>
+                <div class="modal-header">
+                    <h3 class="modal-title">Today's Entry Options</h3>
+                    <button class="modal-close" @onclick="CloseOptions">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="entry-preview-mini">
+                        <h4 class="entry-title-mini">@selectedEntry.Title</h4>
+                        <p class="entry-content-mini">
+                            @(selectedEntry.Content.Length > 100 ? selectedEntry.Content.Substring(0, 100) + "..." : selectedEntry.Content)
+                        </p>
+                        <div class="entry-meta-mini">
+                            <span class="mood-mini @GetMoodClass(selectedEntry.PrimaryMood)">
+                                @GetMoodEmoji(selectedEntry.PrimaryMood) @selectedEntry.PrimaryMood
+                            </span>
+                            <span class="date-mini">@selectedEntry.Date.ToString("MMM dd, yyyy")</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="modal-btn primary" @onclick="PreviewEntry">
+                        <span class="btn-icon">👁️</span>
+                        Preview
+                    </button>
+                    <button class="modal-btn secondary" @onclick="EditEntry">
+                        <span class="btn-icon">✏️</span>
+                        Edit
+                    </button>
+                    <button class="modal-btn danger" @onclick="DeleteEntry">
+                        <span class="btn-icon">🗑️</span>
+                        Delete
+                    </button>
+                    <button class="modal-btn cancel" @onclick="CloseOptions">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- No Entry Modal -->
+    @if (showNoEntryModal && selectedDate.HasValue)
+    {
+        <div class="modal-overlay" @onclick="CloseNoEntryModal">
+            <div class="modal-content" @onclick.stop>
+                <div class="modal-header">
+                    <h3 class="modal-title">No Entry Found</h3>
+                    <button class="modal-close" @onclick="CloseNoEntryModal">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="no-entry-message">
+                        <div class="no-entry-icon">📝</div>
+                        <h4 class="no-entry-message-title">No journal entry for this date</h4>
+                        <p class="no-entry-message-text">
+                            There's no journal entry for @selectedDate.Value.ToString("MMMM dd, yyyy").
+                            @if (selectedDate.Value.Date >= DateTime.Today)
+                            {
+                                <text>Would you like to create one?</text>
+                            }
+                            else
+                            {
+                                <text>Entries for past dates cannot be created to maintain streak accuracy.</text>
+                            }
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    @if (selectedDate.Value.Date >= DateTime.Today)
+                    {
+                        <button class="modal-btn primary" @onclick="CreateEntryFromModal">
+                            <span class="btn-icon">✨️</span>
+                            Create Entry
+                        </button>
+                    }
+                    <button class="modal-btn cancel" @onclick="CloseNoEntryModal">
+                        <span class="btn-icon">❌</span>
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Past Date Warning Modal -->
+    @if (showPastDateWarning)
+    {
+        <div class="modal-overlay" @onclick="ClosePastDateWarning">
+            <div class="modal-content" @onclick.stop>
+                <div class="modal-header">
+                    <h3 class="modal-title">Streak Protection</h3>
+                    <button class="modal-close" @onclick="ClosePastDateWarning">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="streak-warning-message">
+                        <div class="streak-warning-icon">🔒</div>
+                        <h4 class="streak-warning-title">Cannot Create Past Entries</h4>
+                        <p class="streak-warning-text">
+                            To maintain accurate streak tracking, journal entries can only be created for today or future dates.
+                        </p>
+                        <div class="streak-info">
+                            <p><strong>Why this restriction?</strong></p>
+                            <ul class="streak-reasons">
+                                <li>Ensures streak accuracy</li>
+                                <li>Prevents backdating entries</li>
+                                <li>Maintains fair tracking</li>
+                                <li>Encourages daily journaling</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="modal-btn primary" @onclick="ClosePastDateWarning">
+                        <span class="btn-icon">👍</span>
+                        Got it
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Export Timeline Dialog -->
+    @if (showExportDialog)
+    {
+        <div class="modal-overlay" @onclick="CloseExportDialog">
+            <div class="modal-content" @onclick.stop>
+                <div class="modal-header">
+                    <h3 class="modal-title">Export Journal Entries</h3>
+                    <button class="modal-close" @onclick="CloseExportDialog">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="export-dialog-content">
+                        <p class="export-instructions">Select a date range to export your journal entries:</p>
+                        
+                        <div class="export-form-group">
+                            <label class="export-label">Start Date:</label>
+                            <input type="date" class="export-input" @bind="exportStartDate" />
+                        </div>
+                        
+                        <div class="export-form-group">
+                            <label class="export-label">End Date:</label>
+                            <input type="date" class="export-input" @bind="exportEndDate" />
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(exportError))
+                        {
+                            <div class="export-error">
+                                <span class="error-icon">⚠️</span>
+                                <span class="error-message">@exportError</span>
+                            </div>
+                        }
+
+                        @if (exportDateRange != null)
+                        {
+                            <div class="export-summary">
+                                <h4 class="export-summary-title">Export Summary:</h4>
+                                <div class="summary-item">
+                                    <span class="summary-label">Date Range:</span>
+                                    <span class="summary-value">@exportStartDate to @exportEndDate</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-label">Entries Found:</span>
+                                    <span class="summary-value">@exportDateRange.Count entries</span>
+                                </div>
+                                @if (exportDateRange.Any())
+                                {
+                                    <div class="summary-item">
+                                        <span class="summary-label">Total Words:</span>
+                                        <span class="summary-value">@exportDateRange.Sum(e => e.Content.Split(' ').Length) words</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="modal-btn primary" @onclick="PerformTimelineExport" disabled="@(exportDateRange == null || !exportDateRange.Any())">
+                        <span class="btn-icon">📥</span>
+                        Export PDF
+                    </button>
+                    <button class="modal-btn cancel" @onclick="CloseExportDialog">
+                        <span class="btn-icon">❌</span>
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+private DateTime currentMonth = DateTime.Now;
+private List<CalendarDay> calendarDays = new();
+private DateTime? selectedDate;
+private JournalEntry? selectedEntry;
+private List<JournalEntry> allEntries = new();
+private MonthlyStats monthlyStats = new();
+private string[] weekDays = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+private bool showOptionsModal = false;
+private bool showNoEntryModal = false;
+private bool showPastDateWarning = false;
+private bool showExportDialog = false;
+private string exportStartDate = DateTime.Now.AddMonths(-1).ToString("yyyy-MM-dd");
+private string exportEndDate = DateTime.Now.ToString("yyyy-MM-dd");
+private string exportError = string.Empty;
+private List<JournalEntry>? exportDateRange;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+        GenerateCalendar();
+        CalculateMonthlyStats();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            allEntries = await DbService.GetEntriesAsync() ?? new List<JournalEntry>();
+        }
+        catch
+        {
+            // Handle database errors gracefully
+            allEntries = new List<JournalEntry>();
+            // You could log the error here if needed
+        }
+    }
+
+    private void GenerateCalendar()
+    {
+        calendarDays.Clear();
+        
+        var firstDayOfMonth = new DateTime(currentMonth.Year, currentMonth.Month, 1);
+        var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+        
+        // Add empty days for the first week
+        var startDayOfWeek = (int)firstDayOfMonth.DayOfWeek;
+        for (int i = 0; i < startDayOfWeek; i++)
+        {
+            calendarDays.Add(new CalendarDay { Date = firstDayOfMonth.AddDays(-startDayOfWeek + i), IsPadding = true });
+        }
+        
+        // Add all days of the month
+        for (int day = 1; day <= lastDayOfMonth.Day; day++)
+        {
+            var date = new DateTime(currentMonth.Year, currentMonth.Month, day);
+            var hasEntry = allEntries.Any(e => e.Date.Date == date.Date);
+            calendarDays.Add(new CalendarDay { Date = date, HasEntry = hasEntry });
+        }
+    }
+
+    private void PreviousMonth()
+    {
+        currentMonth = currentMonth.AddMonths(-1);
+        GenerateCalendar();
+        CalculateMonthlyStats();
+        StateHasChanged();
+    }
+
+    private void NextMonth()
+    {
+        currentMonth = currentMonth.AddMonths(1);
+        GenerateCalendar();
+        CalculateMonthlyStats();
+        StateHasChanged();
+    }
+
+    private void ShowExportDialog()
+    {
+        exportError = string.Empty;
+        exportDateRange = null;
+        showExportDialog = true;
+        StateHasChanged();
+    }
+
+    private void CloseExportDialog()
+    {
+        showExportDialog = false;
+        exportError = string.Empty;
+        exportDateRange = null;
+        StateHasChanged();
+    }
+
+    private void UpdateExportDateRange()
+    {
+        exportError = string.Empty;
+        exportDateRange = null;
+
+        if (string.IsNullOrEmpty(exportStartDate) || string.IsNullOrEmpty(exportEndDate))
+        {
+            exportError = "Please select both start and end dates.";
+            StateHasChanged();
+            return;
+        }
+
+        if (!DateTime.TryParse(exportStartDate, out var startDate) || !DateTime.TryParse(exportEndDate, out var endDate))
+        {
+            exportError = "Invalid date format.";
+            StateHasChanged();
+            return;
+        }
+
+        if (startDate > endDate)
+        {
+            exportError = "Start date must be before end date.";
+            StateHasChanged();
+            return;
+        }
+
+        exportDateRange = allEntries
+            .Where(e => e.Date.Date >= startDate.Date && e.Date.Date <= endDate.Date)
+            .OrderBy(e => e.Date)
+            .ToList();
+
+        StateHasChanged();
+    }
+
+    private async Task PerformTimelineExport()
+    {
+        if (exportDateRange == null || !exportDateRange.Any())
+        {
+            await Application.Current.MainPage.DisplayAlert(
+                "No Entries",
+                "No journal entries found for the selected date range.",
+                "OK"
+            );
+            return;
+        }
+
+        try
+        {
+            var pdfBytes = await PdfService.GenerateTimelineExportAsync(exportDateRange, exportStartDate, exportEndDate);
+            var fileName = $"Journal_Export_{exportStartDate}_to_{exportEndDate}.txt";
+            await SavePdfFile(pdfBytes, fileName);
+            CloseExportDialog();
+        }
+        catch (Exception ex)
+        {
+            await Application.Current.MainPage.DisplayAlert(
+                "Export Failed",
+                $"Could not export entries: {ex.Message}",
+                "OK"
+            );
+        }
+    }
+
+    private async Task SavePdfFile(byte[] pdfBytes, string fileName)
+    {
+        try
+        {
+            var downloadsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+            var filePath = Path.Combine(downloadsPath, fileName);
+            
+            await File.WriteAllBytesAsync(filePath, pdfBytes);
+            
+            // Show success message to user with actual device path
+            await Application.Current.MainPage.DisplayAlert(
+                "Export Successful", 
+                $"File saved to:\n{filePath}", 
+                "OK"
+            );
+        }
+        catch
+        {
+            await Application.Current.MainPage.DisplayAlert(
+                "Export Failed", 
+                "Could not save the file.", 
+                "OK"
+            );
+        }
+    }
+
+    private void ViewEntry(DateTime date)
+    {
+        try
+        {
+            var entry = allEntries?.FirstOrDefault(e => e.Date.Date == date.Date);
+            if (entry != null)
+            {
+                if (date.Date == DateTime.Today)
+                {
+                    // For today's entry, show options popup
+                    ShowEntryOptions(entry);
+                }
+                else
+                {
+                    // For previous dates, go directly to preview (read-only)
+                    NavManager.NavigateTo($"/entry/{date:yyyy-MM-dd}");
+                }
+            }
+            else
+            {
+                // If no entry, show popup message
+                ShowNoEntryMessage(date);
+            }
+        }
+        catch
+        {
+            // Handle navigation errors gracefully
+            NavManager.NavigateTo("/calendar");
+        }
+    }
+
+    private void ShowEntryOptions(JournalEntry entry)
+    {
+        // This will trigger a popup/modal for today's entry options
+        selectedEntry = entry;
+        showOptionsModal = true;
+    }
+
+    private void ShowNoEntryMessage(DateTime date)
+    {
+        // Show popup for dates without entries
+        selectedDate = date;
+        showNoEntryModal = true;
+    }
+
+    private void CloseNoEntryModal()
+    {
+        showNoEntryModal = false;
+        selectedDate = null;
+    }
+
+    private void CreateEntryFromModal()
+    {
+        if (selectedDate.HasValue)
+        {
+            // Only allow creating entries for today or future dates
+            if (selectedDate.Value.Date >= DateTime.Today)
+            {
+                NavManager.NavigateTo($"/add?date={selectedDate.Value:yyyy-MM-dd}");
+            }
+            else
+            {
+                // Show message that past entries cannot be created
+                showPastDateWarning = true;
+            }
+        }
+        showNoEntryModal = false;
+    }
+
+    private void ClosePastDateWarning()
+    {
+        showPastDateWarning = false;
+        selectedDate = null;
+    }
+
+    private void PreviewEntry()
+    {
+        if (selectedEntry != null)
+        {
+            NavManager.NavigateTo($"/entry/{selectedEntry.Date:yyyy-MM-dd}");
+        }
+        showOptionsModal = false;
+    }
+
+    private void EditEntry()
+    {
+        if (selectedEntry != null)
+        {
+            NavManager.NavigateTo($"/edit/{selectedEntry.Id}");
+        }
+        showOptionsModal = false;
+    }
+
+    private void DeleteEntry()
+    {
+        if (selectedEntry != null)
+        {
+            NavManager.NavigateTo($"/delete/{selectedEntry.Id}");
+        }
+        showOptionsModal = false;
+    }
+
+    private void CloseOptions()
+    {
+        showOptionsModal = false;
+        selectedEntry = null;
+    }
+
+    private void SelectDate(DateTime date)
+    {
+        selectedDate = date;
+        selectedEntry = allEntries.FirstOrDefault(e => e.Date.Date == date.Date);
+        StateHasChanged();
+    }
+
+    private void SelectDate(DateTime? date)
+    {
+        if (date.HasValue)
+        {
+            selectedDate = date.Value;
+            selectedEntry = allEntries.FirstOrDefault(e => e.Date.Date == date.Value.Date);
+        }
+        else
+        {
+            selectedDate = null;
+            selectedEntry = null;
+        }
+        StateHasChanged();
+    }
+
+    private string GetDayClasses(CalendarDay day)
+    {
+        var classes = new List<string>();
+        
+        if (day.IsPadding)
+        {
+            classes.Add("padding");
+        }
+        else
+        {
+            if (day.Date.Date == DateTime.Today)
+            {
+                classes.Add("today");
+            }
+            
+            if (selectedDate?.Date == day.Date)
+            {
+                classes.Add("selected");
+            }
+            
+            if (day.Date.DayOfWeek == DayOfWeek.Saturday || day.Date.DayOfWeek == DayOfWeek.Sunday)
+            {
+                classes.Add("weekend");
+            }
+            
+            if (day.HasEntry)
+            {
+                classes.Add("has-entry");
+            }
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private void CalculateMonthlyStats()
+    {
+        try
+        {
+            var monthEntries = allEntries.Where(e => e.Date.Month == currentMonth.Month && e.Date.Year == currentMonth.Year).ToList();
+            
+            monthlyStats = new MonthlyStats
+            {
+                TotalEntries = monthEntries.Count,
+                MostCommonMood = monthEntries.Any() ? 
+                    monthEntries.GroupBy(e => e.PrimaryMood).OrderByDescending(g => g.Count()).First().Key : "None",
+                WritingStreak = CalculateWritingStreak(monthEntries),
+                AverageWords = monthEntries.Any() ? 
+                    (int)Math.Round(monthEntries.Average(e => e.Content?.Split(' ')?.Length ?? 0)) : 0
+            };
+        }
+        catch
+        {
+            // Handle stats calculation errors gracefully
+            monthlyStats = new MonthlyStats
+            {
+                TotalEntries = 0,
+                MostCommonMood = "None",
+                WritingStreak = 0,
+                AverageWords = 0
+            };
+        }
+    }
+
+    private int CalculateWritingStreak(List<JournalEntry> entries)
+    {
+        if (!entries.Any()) return 0;
+        
+        var sortedEntries = entries.OrderByDescending(e => e.Date).ToList();
+        var streak = 0;
+        var currentDate = DateTime.Today;
+        
+        foreach (var entry in sortedEntries)
+        {
+            if (entry.Date.Date == currentDate.Date)
+            {
+                streak++;
+                currentDate = currentDate.AddDays(-1);
+            }
+            else if (entry.Date.Date < currentDate.Date)
+            {
+                break;
+            }
+        }
+        
+        return streak;
+    }
+
+    private void CreateEntry(DateTime date)
+    {
+        NavManager.NavigateTo($"/add?date={date:yyyy-MM-dd}");
+    }
+
+    private void EditEntry(int id)
+    {
+        NavManager.NavigateTo($"/edit/{id}");
+    }
+
+    private string GetMoodEmoji(string mood) => mood switch
+    {
+        "Happy" => "😊",
+        "Excited" => "🤩",
+        "Grateful" => "🙏",
+        "Neutral" => "😐",
+        "Sad" => "😢",
+        "Stressed" => "😫",
+        _ => "😐"
+    };
+
+    private string GetMoodClass(string mood) => mood switch
+    {
+        "Happy" => "mood-positive",
+        "Excited" => "mood-positive", 
+        "Grateful" => "mood-positive",
+        "Neutral" => "mood-neutral",
+        "Sad" => "mood-negative",
+        "Stressed" => "mood-negative",
+        _ => "mood-neutral"
+    };
+
+    public class CalendarDay
+    {
+        public DateTime Date { get; set; }
+        public bool HasEntry { get; set; }
+        public bool IsPadding { get; set; }
+    }
+
+    public class MonthlyStats
+    {
+        public int TotalEntries { get; set; }
+        public string MostCommonMood { get; set; } = "None";
+        public int WritingStreak { get; set; }
+        public int AverageWords { get; set; }
+    }
+}
+
+<style>
+    .calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .header-content {
+        flex: 1;
+    }
+
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--text-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .page-subtitle {
+        color: var(--muted-text);
+        margin: 0;
+    }
+
+    .header-actions {
+        flex-shrink: 0;
+    }
+
+    .selected-date-info {
+        margin-top: 2rem;
+        padding: 1.5rem;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 1rem;
+    }
+
+    .selected-date-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 1rem;
+    }
+
+    .selected-entry-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .no-entry-card {
+        text-align: center;
+        padding: 2rem;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+    }
+
+    .no-entry-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+
+    .entry-header {
+        margin-bottom: 1rem;
+    }
+
+    .entry-body {
+        margin-bottom: 1rem;
+    }
+
+    .entry-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .entry-content {
+        color: var(--text-color);
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+
+    .entry-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .stats-summary {
+        margin-top: 3rem;
+        padding: 2rem;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 1rem;
+    }
+
+    .stats-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 1.5rem;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .stat-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        line-height: 1;
+    }
+
+    .stat-label {
+        color: var(--muted-text);
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+    }
+
+    .calendar-day.padding {
+        opacity: 0.3;
+        cursor: default;
+    }
+
+    .calendar-day.padding:hover {
+        transform: none;
+        background: var(--card-bg) !important;
+    }
+
+    .entry-indicator {
+        position: absolute;
+        bottom: 2px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.75rem;
+        color: var(--calendar-has-entry);
+    }
+
+    /* Dark mode enhancements */
+    .dark-mode .selected-entry-card,
+    .dark-mode .no-entry-card {
+        background: var(--card-bg);
+        border-color: var(--border-color);
+    }
+
+    .dark-mode .stat-card {
+        background: var(--card-bg);
+        border-color: var(--border-color);
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        backdrop-filter: blur(4px);
+    }
+
+    .modal-content {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 1rem;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 40px var(--shadow-color);
+        animation: modalSlideIn 0.3s ease-out;
+    }
+
+    @@keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .modal-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin: 0;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--muted-text);
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: 0.25rem;
+        transition: all 0.2s ease;
+    }
+
+    .modal-close:hover {
+        background: var(--border-color);
+        color: var(--text-color);
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .entry-preview-mini {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .entry-title-mini {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin: 0 0 0.75rem 0;
+    }
+
+    .entry-content-mini {
+        color: var(--text-color);
+        line-height: 1.5;
+        margin: 0 0 1rem 0;
+        opacity: 0.8;
+    }
+
+    .entry-meta-mini {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 0.875rem;
+    }
+
+    .mood-mini {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-weight: 500;
+    }
+
+    .date-mini {
+        color: var(--muted-text);
+    }
+
+    .modal-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        padding: 1.5rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .modal-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+    }
+
+    .modal-btn.primary {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .modal-btn.primary:hover {
+        background: var(--primary-hover);
+        transform: translateY(-1px);
+    }
+
+    .modal-btn.secondary {
+        background: var(--secondary-color);
+        color: white;
+    }
+
+    .modal-btn.secondary:hover {
+        background: #475569;
+        transform: translateY(-1px);
+    }
+
+    .modal-btn.danger {
+        background: var(--danger-color);
+        color: white;
+    }
+
+    .modal-btn.danger:hover {
+        background: #dc2626;
+        transform: translateY(-1px);
+    }
+
+    .modal-btn.cancel {
+        background: var(--muted-text);
+        color: white;
+    }
+
+    .modal-btn.cancel:hover {
+        background: #6b7280;
+        transform: translateY(-1px);
+    }
+
+    /* Dark mode modal enhancements */
+    .dark-mode .modal-content {
+        background: var(--card-bg);
+        border-color: var(--border-color);
+    }
+
+    .dark-mode .entry-preview-mini {
+        background: var(--card-bg);
+        border-color: var(--border-color);
+    }
+
+    .dark-mode .modal-btn.cancel {
+        background: #6b7280;
+    }
+
+    /* Streak Warning Modal Styles */
+    .streak-warning-message {
+        text-align: center;
+        padding: 1rem;
+    }
+
+    .streak-warning-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    .streak-warning-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin: 0 0 0.5rem 0;
+    }
+
+    .streak-warning-text {
+        color: var(--text-color);
+        line-height: 1.5;
+        margin: 0 0 1rem 0;
+    }
+
+    .streak-info {
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid var(--primary-color);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-top: 1rem;
+        text-align: left;
+    }
+
+    .streak-info p {
+        color: var(--primary-color);
+        font-weight: 600;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .streak-reasons {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .streak-reasons li {
+        color: var(--text-color);
+        padding: 0.25rem 0;
+        padding-left: 1.5rem;
+        position: relative;
+    }
+
+    .streak-reasons li::before {
+        content: "•";
+        position: absolute;
+        left: 0;
+        color: var(--primary-color);
+        font-weight: bold;
+    }
+
+    /* No Entry Modal Styles */
+    .no-entry-message {
+        text-align: center;
+        padding: 1rem;
+    }
+
+    .no-entry-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    .no-entry-message-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin: 0 0 0.5rem 0;
+    }
+
+    .no-entry-message-text {
+        color: var(--text-color);
+        line-height: 1.5;
+        margin: 0 0 1rem 0;
+    }
+
+    .modal-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        padding: 1.5rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .modal-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+    }
+
+    .modal-btn.primary {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .modal-btn.primary:hover {
+        background: var(--primary-hover);
+        transform: translateY(-1px);
+    }
+
+    .modal-btn.secondary {
+        background: var(--secondary-color);
+        color: white;
+    }
+
+    .modal-btn.secondary:hover {
+        background: #475569;
+        transform: translateY(-1px);
+    }
+
+    .modal-btn.danger {
+        background: var(--danger-color);
+        color: white;
+    }
+
+    .modal-btn.danger:hover {
+        background: #dc2626;
+        transform: translateY(-1px);
+    }
+
+    .modal-btn.cancel {
+        background: var(--muted-text);
+    .dark-mode .streak-info {
+        background: rgba(99, 102, 241, 0.2);
+        border-color: #818cf8;
+    }
+
+    .dark-mode .streak-info p {
+        color: #818cf8;
+    }
+
+    .dark-mode .streak-reasons li::before {
+        color: #818cf8;
+    }
+
+    /* Multiple Entries Modal Styles */
+    .multiple-entries-message {
+        text-align: center;
+        padding: 1rem;
+    }
+
+    .multiple-entries-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    .multiple-entries-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin: 0 0 0.5rem 0;
+    }
+
+    .multiple-entries-text {
+        color: var(--text-color);
+        line-height: 1.5;
+        margin: 0 0 1rem 0;
+    }
+
+    .entries-list {
+        max-height: 300px;
+        overflow-y: auto;
+        margin: 1rem 0;
+    }
+
+    .entry-item {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .entry-item:hover {
+        background: var(--primary-light);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .entry-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .entry-time {
+        font-size: 0.875rem;
+        color: var(--muted-text);
+        font-weight: 500;
+    }
+
+    .entry-mood {
+        display: inline-block;
+        background: var(--primary-color);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .entry-item-content {
+        margin-top: 0.5rem;
+    }
+
+    .entry-item-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin: 0 0 0.25rem 0;
+        line-height: 1.2;
+    }
+
+    .entry-item-preview {
+        color: var(--text-color);
+        font-size: 0.875rem;
+        line-height: 1.4;
+        margin: 0;
+        white-space: pre-wrap;
+    }
+
+    /* Dark mode modal enhancements */
+    .dark-mode .modal-content {
+        background: var(--card-bg);
+        border-color: var(--border-color);
+    }
+
+    .dark-mode .streak-reasons li::before {
+        color: #818cf8;
+    }
+
+    .dark-mode .entry-item {
+        background: var(--card-bg);
+        border-color: var(--border-color);
+    }
+
+    .dark-mode .entry-item:hover {
+        background: var(--primary-dark);
+    }
+
+    .dark-mode .entry-item-header {
+        border-bottom-color: var(--border-color);
+    }
+
+    .dark-mode .entry-item-title {
+        color: var(--text-color);
+    }
+
+    .dark-mode .entry-item-preview {
+        color: var(--text-color);
+    }
+</style>

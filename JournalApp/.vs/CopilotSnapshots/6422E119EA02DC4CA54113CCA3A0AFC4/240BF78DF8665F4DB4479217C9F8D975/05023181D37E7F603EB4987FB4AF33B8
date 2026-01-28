@@ -1,0 +1,1226 @@
+﻿@page "/"
+@using JournalApp.Models
+@using JournalApp.Services
+@inject DatabaseService DbService
+@inject NavigationManager NavManager
+
+<div class="container mt-4 mb-5">
+    <!-- Enhanced Page Header -->
+    <div class="page-header mb-5">
+        <div class="header-content">
+            <h1 class="page-title">My Journal</h1>
+            <p class="page-subtitle">Capture your daily thoughts and emotions</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-primary btn-lg shadow-sm" @onclick="GoToAdd">
+                <span class="btn-icon">✏️</span>
+                <span class="btn-text">New Entry</span>
+            </button>
+        </div>
+    </div>
+
+    @if (entries == null)
+    {
+        <div class="loading-state">
+            <div class="spinner-animation">
+                <div class="spinner-border text-primary" role="status"></div>
+            </div>
+            <p class="loading-text">Loading your memories...</p>
+        </div>
+    }
+    else if (entries.Count == 0)
+    {
+        <div class="empty-state">
+            <div class="empty-icon">📖</div>
+            <h3 class="empty-title">Your journal awaits</h3>
+            <p class="empty-description">Start your journey of self-reflection by writing your first entry</p>
+            <button class="btn btn-outline-primary btn-lg" @onclick="GoToAdd">
+                <span class="btn-icon">🌟</span>
+                <span class="btn-text">Start Writing</span>
+            </button>
+        </div>
+    }
+    else
+    {
+        <!-- Search and Filter Section -->
+        <div class="search-filter-section mb-4">
+            <div class="search-bar">
+                <div class="search-input-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" @bind="SearchQuery" placeholder="Search entries by title or content..." />
+                </div>
+            </div>
+            
+            <div class="filter-controls">
+                <div class="filter-group">
+                    <label class="filter-label">Date Range:</label>
+                    <select class="filter-select" @bind="SelectedDateRange">
+                        <option value="all">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="year">This Year</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Mood:</label>
+                    <select class="filter-select" @bind="SelectedMood">
+                        <option value="all">All Moods</option>
+                        <option value="Happy">😊 Happy</option>
+                        <option value="Excited">🤩 Excited</option>
+                        <option value="Grateful">🙏 Grateful</option>
+                        <option value="Neutral">😐 Neutral</option>
+                        <option value="Sad">😢 Sad</option>
+                        <option value="Stressed">😫 Stressed</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Tags:</label>
+                    <select class="filter-select" @bind="SelectedTag">
+                        <option value="all">All Tags</option>
+                        @foreach (var tag in availableTags)
+                        {
+                            <option value="@tag">@tag</option>
+                        }
+                    </select>
+                </div>
+                
+                <button class="clear-filters-btn" @onclick="ClearFilters">
+                    <span class="btn-icon">🔄</span>
+                    Clear Filters
+                </button>
+            </div>
+            
+            @if (isFiltered)
+            {
+                <div class="filter-summary">
+                    <span class="filter-count">@filteredEntries.Count entries found</span>
+                </div>
+            }
+        </div>
+
+        <!-- Entry Statistics -->
+        <div class="stats-bar mb-4">
+            <div class="stat-item">
+                <span class="stat-value">@(isFiltered ? filteredEntries.Count : entries.Count)</span>
+                <span class="stat-label">@(isFiltered ? "Filtered" : "Total") Entries</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">@CalculateStreak()</span>
+                <span class="stat-label">Day Streak</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">@GetMostRecentMood()</span>
+                <span class="stat-label">Current Mood</span>
+            </div>
+        </div>
+
+        <!-- Enhanced Entry Grid -->
+        <div class="entries-grid">
+            @foreach (var entry in isFiltered ? filteredEntries : entries)
+            {
+                <div class="entry-card">
+                    <div class="entry-header">
+                        <div class="entry-date">
+                            <span class="date-day">@entry.Date.ToString("dd")</span>
+                            <span class="date-month">@entry.Date.ToString("MMM")</span>
+                        </div>
+                        <div class="entry-mood @GetMoodClass(entry.PrimaryMood)">
+                            <span class="mood-emoji">@GetMoodEmoji(entry.PrimaryMood)</span>
+                            <span class="mood-text">@entry.PrimaryMood</span>
+                        </div>
+                    </div>
+                    
+                    <div class="entry-body">
+                        <h3 class="entry-title">@entry.Title</h3>
+                        <p class="entry-content">
+                            @(entry.Content.Length > 120 ? entry.Content.Substring(0, 120) + "..." : entry.Content)
+                        </p>
+                        
+                        @if (!string.IsNullOrEmpty(entry.Tags))
+                        {
+                            <div class="entry-tags">
+                                @foreach (var tag in entry.Tags.Split(',').Take(3))
+                                {
+                                    <span class="tag-chip">@tag.Trim()</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                    
+                    <div class="entry-footer">
+                        <button class="action-btn edit" @onclick="() => EditEntry(entry.Id)">
+                            <span class="btn-icon">✏️</span>
+                            Edit
+                        </button>
+                        <button class="action-btn delete" @onclick="() => DeleteEntry(entry.Id)">
+                            <span class="btn-icon">🗑️</span>
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<JournalEntry> entries = new();
+    private List<JournalEntry> filteredEntries = new();
+    private List<string> availableTags = new();
+    
+    // Search and filter properties
+    private string searchQuery = string.Empty;
+    private string selectedDateRange = "all";
+    private string selectedMood = "all";
+    private string selectedTag = "all";
+    private bool isFiltered = false;
+
+    // Property setters to trigger search when values change
+    private string SearchQuery
+    {
+        get => searchQuery;
+        set
+        {
+            searchQuery = value;
+            PerformSearch();
+        }
+    }
+
+    private string SelectedDateRange
+    {
+        get => selectedDateRange;
+        set
+        {
+            selectedDateRange = value;
+            PerformSearch();
+        }
+    }
+
+    private string SelectedMood
+    {
+        get => selectedMood;
+        set
+        {
+            selectedMood = value;
+            PerformSearch();
+        }
+    }
+
+    private string SelectedTag
+    {
+        get => selectedTag;
+        set
+        {
+            selectedTag = value;
+            PerformSearch();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEntries();
+        ExtractAvailableTags();
+    }
+
+    private async Task LoadEntries()
+    {
+        entries = await DbService.GetEntriesAsync();
+        filteredEntries = entries;
+        ExtractAvailableTags();
+    }
+
+    private void ExtractAvailableTags()
+    {
+        var allTags = entries
+            .Where(e => !string.IsNullOrEmpty(e.Tags))
+            .SelectMany(e => e.Tags.Split(',').Select(t => t.Trim()))
+            .Where(t => !string.IsNullOrEmpty(t))
+            .Distinct()
+            .OrderBy(t => t)
+            .ToList();
+        
+        availableTags = allTags;
+    }
+
+    private void PerformSearch()
+    {
+        var query = entries.AsEnumerable();
+
+        // Text search (title and content)
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.Where(e => 
+                e.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                e.Content.Contains(searchQuery, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Date range filter
+        if (selectedDateRange != "all")
+        {
+            var today = DateTime.Today;
+            query = selectedDateRange switch
+            {
+                "today" => query.Where(e => e.Date.Date == today),
+                "week" => query.Where(e => e.Date >= today.AddDays(-7)),
+                "month" => query.Where(e => e.Date.Month == today.Month && e.Date.Year == today.Year),
+                "year" => query.Where(e => e.Date.Year == today.Year),
+                _ => query
+            };
+        }
+
+        // Mood filter
+        if (selectedMood != "all")
+        {
+            query = query.Where(e => e.PrimaryMood == selectedMood);
+        }
+
+        // Tag filter
+        if (selectedTag != "all")
+        {
+            query = query.Where(e => 
+                !string.IsNullOrEmpty(e.Tags) && 
+                e.Tags.Split(',').Select(t => t.Trim()).Contains(selectedTag, StringComparer.OrdinalIgnoreCase));
+        }
+
+        filteredEntries = query.ToList();
+        isFiltered = !string.IsNullOrWhiteSpace(searchQuery) || 
+                     selectedDateRange != "all" || 
+                     selectedMood != "all" || 
+                     selectedTag != "all";
+        
+        StateHasChanged();
+    }
+
+    private void ClearFilters()
+    {
+        searchQuery = string.Empty;
+        selectedDateRange = "all";
+        selectedMood = "all";
+        selectedTag = "all";
+        isFiltered = false;
+        filteredEntries = entries;
+        StateHasChanged();
+    }
+
+    private void GoToAdd() => NavManager.NavigateTo("/add");
+    private void EditEntry(int id) => NavManager.NavigateTo($"/edit/{id}");
+
+    private async Task DeleteEntry(int id)
+    {
+        bool confirm = await Application.Current.MainPage.DisplayAlert("Delete?", "Confirm delete?", "Yes", "No");
+        if (confirm)
+        {
+            await DbService.DeleteEntryAsync(id);
+            await LoadEntries();
+            PerformSearch(); // Reapply filters after deletion
+        }
+    }
+
+    private string GetMoodEmoji(string mood) => mood switch
+    {
+        "Happy" => "😊",
+        "Excited" => "🤩",
+        "Sad" => "😢",
+        "Stressed" => "😫",
+        "Grateful" => "🙏",
+        "Neutral" => "😐",
+        _ => "😐"
+    };
+
+    private string GetMoodClass(string mood) => mood switch
+    {
+        "Happy" => "mood-positive",
+        "Excited" => "mood-positive", 
+        "Grateful" => "mood-positive",
+        "Neutral" => "mood-neutral",
+        "Sad" => "mood-negative",
+        "Stressed" => "mood-negative",
+        _ => "mood-neutral"
+    };
+
+    private int CalculateStreak()
+    {
+        if (entries == null || !entries.Any()) return 0;
+        
+        var sortedEntries = entries.OrderByDescending(e => e.Date).ToList();
+        var streak = 0;
+        var currentDate = DateTime.Today;
+        
+        foreach (var entry in sortedEntries)
+        {
+            if (entry.Date.Date == currentDate.Date)
+            {
+                streak++;
+                currentDate = currentDate.AddDays(-1);
+            }
+            else if (entry.Date.Date < currentDate.Date)
+            {
+                break;
+            }
+        }
+        
+        return streak;
+    }
+
+    private string GetMostRecentMood()
+    {
+        if (entries == null || !entries.Any()) return "None";
+        return entries.OrderByDescending(e => e.Date).First().PrimaryMood;
+    }
+}
+
+<style>
+    :root {
+        --primary: #0D9488;
+        --primary-light: #5EEAD4;
+        --primary-dark: #0F766E;
+        --secondary: #FED7AA;
+        --accent: #FB7185;
+        --accent-light: #FECDD3;
+        --bg-color: #F8FAF7;
+        --card-bg: #FFFFFF;
+        --text: #1F2937;
+        --text-light: #6B7280;
+        --border: #E5E7EB;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --radius: 12px;
+    }
+
+    /* Base Styles */
+    body {
+        background-color: var(--bg-color);
+        color: var(--text);
+    }
+
+    /* Page Header */
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        padding: 2rem;
+        border-radius: var(--radius);
+        color: white;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+        align-items: center;
+        margin-bottom: 3rem;
+        padding-bottom: 2rem;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .header-content {
+        flex: 1;
+    }
+
+    .page-title {
+        color: white;
+        font-size: 2.25rem;
+        font-weight: 700;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .page-subtitle {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1.1rem;
+        margin: 0;
+    }
+
+    /* Buttons */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+        font-size: 1rem;
+    }
+
+    .btn-primary {
+        background-color: var(--accent);
+        color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-primary:hover {
+        background-color: #F43F5E;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-outline-primary {
+        background: transparent;
+        border: 2px solid var(--accent);
+        color: var(--accent);
+    }
+
+    .btn-outline-primary:hover {
+        background-color: var(--accent-light);
+        color: var(--accent);
+    }
+
+    .btn-icon {
+        margin-right: 0.5rem;
+    }
+
+    /* Entry Cards */
+    .entries-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .entry-card {
+        background: var(--card-bg);
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        border: 1px solid var(--border);
+    }
+
+    .entry-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .entry-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.25rem;
+        background: var(--primary);
+        color: white;
+    }
+
+    .entry-date {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+    }
+
+    .date-day {
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .date-month {
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .entry-mood {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+
+    .entry-body {
+        padding: 1.5rem;
+        flex: 1;
+    }
+
+    .entry-title {
+        margin: 0 0 1rem 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text);
+    }
+
+    .entry-content {
+        color: var(--text-light);
+        margin: 0 0 1.25rem 0;
+        line-height: 1.6;
+        font-size: 0.95rem;
+    }
+
+    .entry-footer {
+        display: flex;
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--border);
+        gap: 0.75rem;
+    }
+
+    .action-btn {
+        flex: 1;
+        padding: 0.5rem;
+        border: none;
+        border-radius: 6px;
+        font-weight: 500;
+        font-size: 0.875rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .action-btn.edit {
+        background-color: var(--primary-light);
+        color: var(--primary-dark);
+    }
+
+    .action-btn.edit:hover {
+        background-color: var(--primary);
+        color: white;
+    }
+
+    .action-btn.delete {
+        background-color: var(--accent-light);
+        color: var(--accent);
+    }
+
+    .action-btn.delete:hover {
+        background-color: var(--accent);
+        color: white;
+    }
+
+    /* Search and Filter Section */
+    .search-filter-section {
+        background: var(--card-bg);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+    }
+
+    .search-bar {
+        margin-bottom: 1.5rem;
+    }
+
+    .search-input-wrapper {
+        position: relative;
+        max-width: 600px;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-light);
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 0.75rem 1rem 0.75rem 3rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.2s ease;
+        background-color: var(--card-bg);
+        color: var(--text);
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+    }
+
+    .filter-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .filter-label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-light);
+    }
+
+    .filter-select {
+        padding: 0.5rem 2rem 0.5rem 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background-color: var(--card-bg);
+        color: var(--text);
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+    }
+
+    .clear-filters-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: none;
+        border: none;
+        color: var(--primary);
+        font-weight: 500;
+        font-size: 0.875rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .clear-filters-btn:hover {
+        background-color: rgba(13, 148, 136, 0.1);
+    }
+
+    .filter-summary {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
+        margin-top: 1rem;
+    }
+
+    .filter-count {
+        font-size: 0.875rem;
+        color: var(--primary);
+        font-weight: 500;
+    }
+
+    /* Stats Bar */
+    .stats-bar {
+        display: flex;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-item {
+        flex: 1;
+        background: var(--card-bg);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        transition: transform 0.2s ease;
+    }
+
+    .stat-item:hover {
+        transform: translateY(-2px);
+    }
+
+    .stat-value {
+        display: block;
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 0.25rem;
+        line-height: 1.2;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* Tags */
+    .entry-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .tag-chip {
+        display: inline-block;
+        background-color: var(--primary-light);
+        color: var(--primary-dark);
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        white-space: nowrap;
+    }
+
+    /* Mood Classes */
+    .mood-happy {
+        background-color: rgba(245, 158, 11, 0.15);
+        color: #B45309;
+    }
+
+    .mood-excited {
+        background-color: rgba(236, 72, 153, 0.15);
+        color: #9D174D;
+    }
+
+    .mood-grateful {
+        background-color: rgba(16, 185, 129, 0.15);
+        color: #047857;
+    }
+
+    .mood-neutral {
+        background-color: rgba(107, 114, 128, 0.15);
+        color: #4B5563;
+    }
+
+    .mood-sad {
+        background-color: rgba(59, 130, 246, 0.15);
+        color: #1D4ED8;
+    }
+
+    .mood-stressed {
+        background-color: rgba(220, 38, 38, 0.15);
+        color: #B91C1C;
+    }
+        margin: 0;
+    }
+
+    .header-actions {
+        flex-shrink: 0;
+    }
+
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+        font-size: 1.1rem;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-icon {
+        font-size: 1.2rem;
+    }
+
+    .btn-text {
+        font-weight: 500;
+    }
+
+    /* Loading State */
+    .loading-state {
+        text-align: center;
+        padding: 4rem 0;
+    }
+
+    .spinner-animation {
+        margin-bottom: 1rem;
+    }
+
+    .loading-text {
+        color: var(--muted-text);
+        font-size: 1.1rem;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 5rem 2rem;
+        background: var(--card-bg);
+        border: 2px dashed var(--border-color);
+        border-radius: 16px;
+        margin: 2rem 0;
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        display: block;
+    }
+
+    .empty-title {
+        font-size: 1.8rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 1rem;
+    }
+
+    .empty-description {
+        font-size: 1.1rem;
+        color: var(--muted-text);
+        margin-bottom: 2rem;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Search and Filter Section */
+    .search-filter-section {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .search-bar {
+        margin-bottom: 1.5rem;
+    }
+
+    .search-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 1rem;
+        font-size: 1.2rem;
+        color: var(--muted-text);
+        pointer-events: none;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 0.75rem 1rem 0.75rem 3rem;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        background: var(--card-bg);
+        color: var(--text-color);
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(var(--primary-color), 0.1);
+    }
+
+    .search-input::placeholder {
+        color: var(--muted-text);
+    }
+
+    .filter-controls {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        align-items: end;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        min-width: 150px;
+    }
+
+    .filter-label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-color);
+    }
+
+    .filter-select {
+        padding: 0.5rem 1rem;
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--card-bg);
+        color: var(--text-color);
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(var(--primary-color), 0.1);
+    }
+
+    .clear-filters-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border: 2px solid var(--border-color);
+        background: var(--card-bg);
+        border-radius: 8px;
+        color: var(--text-color);
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        height: fit-content;
+    }
+
+    .clear-filters-btn:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        transform: translateY(-1px);
+    }
+
+    .filter-summary {
+        margin-top: 1rem;
+        padding: 0.75rem 1rem;
+        background: rgba(var(--primary-color), 0.1);
+        border: 1px solid rgba(var(--primary-color), 0.2);
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .filter-count {
+        color: var(--primary-color);
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    /* Stats Bar */
+    .stats-bar {
+        display: flex;
+        gap: 2rem;
+        padding: 1.5rem;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+
+    .stat-item {
+        text-align: center;
+        flex: 1;
+    }
+
+    .stat-value {
+        display: block;
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--muted-text);
+        margin-top: 0.25rem;
+    }
+
+    /* Entry Grid */
+    .entries-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+
+    /* Entry Card */
+    .entry-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .entry-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 30px var(--shadow-color);
+        border-color: var(--primary-color);
+    }
+
+    /* Entry Header */
+    .entry-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem 1.5rem 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .entry-date {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: var(--primary-color);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        min-width: 60px;
+    }
+
+    .date-day {
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .date-month {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        margin-top: 0.25rem;
+    }
+
+    /* Mood Indicators */
+    .entry-mood {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .mood-positive {
+        background: rgba(34, 197, 94, 0.1);
+        color: #22c55e;
+        border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    .mood-neutral {
+        background: rgba(156, 163, 175, 0.1);
+        color: #6b7280;
+        border: 1px solid rgba(156, 163, 175, 0.2);
+    }
+
+    .mood-negative {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .mood-emoji {
+        font-size: 1.2rem;
+    }
+
+    /* Entry Body */
+    .entry-body {
+        padding: 1.5rem;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .entry-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 1rem;
+        line-height: 1.3;
+    }
+
+    .entry-content {
+        color: var(--text-color);
+        line-height: 1.6;
+        margin-bottom: 1rem;
+        flex: 1;
+        opacity: 0.8;
+    }
+
+    /* Tags */
+    .entry-tags {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-top: auto;
+    }
+
+    .tag-chip {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-color);
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    /* Entry Footer */
+    .entry-footer {
+        display: flex;
+        gap: 0.5rem;
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--border-color);
+        background: rgba(var(--primary-color), 0.02);
+    }
+
+    .action-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--border-color);
+        background: var(--card-bg);
+        border-radius: 8px;
+        font-size: 0.9rem;
+        color: var(--text-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex: 1;
+        justify-content: center;
+    }
+
+    .action-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px var(--shadow-color);
+    }
+
+    .action-btn.edit:hover {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+
+    .action-btn.delete:hover {
+        background: var(--danger-color);
+        color: white;
+        border-color: var(--danger-color);
+    }
+
+    /* Dark Mode Enhancements */
+    .dark-mode .mood-positive {
+        background: rgba(34, 197, 94, 0.2);
+        color: #4ade80;
+        border-color: rgba(34, 197, 94, 0.3);
+    }
+
+    .dark-mode .mood-neutral {
+        background: rgba(156, 163, 175, 0.2);
+        color: #9ca3af;
+        border-color: rgba(156, 163, 175, 0.3);
+    }
+
+    .dark-mode .mood-negative {
+        background: rgba(239, 68, 68, 0.2);
+        color: #f87171;
+        border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .dark-mode .entry-date {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .dark-mode .tag-chip {
+        background: rgba(var(--primary-color), 0.1);
+        border-color: var(--primary-color);
+        color: white;
+    }
+</style>

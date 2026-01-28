@@ -1,0 +1,824 @@
+@page "/add"
+@page "/add/{Date:datetime}"
+@page "/edit/{Id:int}"
+@using JournalApp.Models
+@using JournalApp.Services
+@inject DatabaseService DbService
+@inject NavigationManager NavManager
+@inject IJSRuntime JSRuntime
+
+<div class="editor-container">
+    <!-- Editor Header -->
+    <div class="editor-header">
+        <div class="header-left">
+            <button class="back-btn" @onclick="Cancel">
+                <span class="back-icon">←</span>
+                <span class="back-text">Back</span>
+            </button>
+        </div>
+        <div class="header-center">
+            <h2 class="editor-title">@(Id == 0 ? "New Entry" : "Edit Entry")</h2>
+            <p class="editor-date">@entryModel.Date.ToString("dddd, MMMM dd, yyyy")</p>
+            @if (entryModel.Date.Date != DateTime.Today)
+            {
+                <div class="read-only-badge">Read Only</div>
+            }
+            else
+            {
+                <div class="today-badge">Today's Entry</div>
+            }
+        </div>
+        <div class="header-right">
+            @if (isEditingAllowed)
+            {
+                <button class="save-btn" @onclick="SaveEntry">
+                    <span class="save-icon">💾</span>
+                    <span class="save-text">Save</span>
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (showExistingEntryMessage)
+    {
+        <div class="alert-box alert-info">
+            <span class="alert-icon">ℹ️</span>
+            <span class="alert-text">You already have an entry for today. Editing that entry.</span>
+        </div>
+    }
+
+    @if (showReadOnlyMessage)
+    {
+        <div class="alert-box alert-warning">
+            <span class="alert-icon">🔒</span>
+            <span class="alert-text">Past journal entries are read-only and cannot be modified.</span>
+        </div>
+    }
+
+    <!-- Main Editor Form -->
+    <div class="editor-form">
+        <EditForm Model="@entryModel" OnValidSubmit="@SaveEntry">
+            <DataAnnotationsValidator />
+
+            <!-- Title Section -->
+            <div class="form-section">
+                <label class="form-label">Title</label>
+                <InputText class="title-input" @bind-Value="entryModel.Title" 
+                          placeholder="What's on your mind today?" 
+                          disabled="@(!isEditingAllowed)" />
+            </div>
+
+            <!-- Mood Section -->
+            <div class="form-section">
+                <label class="form-label">How are you feeling?</label>
+                <div class="mood-instruction">
+                    <small>Select your primary mood and up to two optional secondary moods</small>
+                </div>
+                
+                <div class="mood-selected">
+                    <div class="selected-mood primary">
+                        <span>Primary: </span>
+                        @if (!string.IsNullOrEmpty(entryModel.PrimaryMood))
+                        {
+                            <span class="mood-tag">
+                                @GetMoodEmoji(entryModel.PrimaryMood) @entryModel.PrimaryMood
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="mood-tag empty">Not selected</span>
+                        }
+                    </div>
+                    <div class="selected-mood secondary">
+                        <span>Secondary: </span>
+                        @if (entryModel.GetSecondaryMoodsList().Any())
+                        {
+                            foreach (var mood in entryModel.GetSecondaryMoodsList())
+                            {
+                                <span class="mood-tag">
+                                    @GetMoodEmoji(mood) @mood
+                                    @if (isEditingAllowed)
+                                    {
+                                        <span class="remove-mood" @onclick="() => entryModel.ToggleSecondaryMood(mood)">×</span>
+                                    }
+                                </span>
+                            }
+                        }
+                        else
+                        {
+                            <span class="mood-tag empty">None selected</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="mood-selector">
+                    @foreach (var mood in GetMoodOptions())
+                    {
+                        <div class="mood-option 
+                            @(entryModel.PrimaryMood == mood.Value ? "primary-selected" : "") 
+                            @(entryModel.HasSecondaryMood(mood.Value) ? "secondary-selected" : "") "
+                             @onclick="() => OnMoodSelected(mood.Value)"
+                             title="@mood.Value"
+                             style="@(isEditingAllowed ? "" : "pointer-events: none; opacity: 0.6;")">
+                            <span class="mood-emoji">@mood.Emoji</span>
+                            <span class="mood-name">@mood.Value</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Tags Section -->
+            <div class="form-section">
+                <label class="form-label">Tags</label>
+                <div class="tags-container">
+                    <InputText class="tags-input" @bind-Value="entryModel.Tags" 
+                              placeholder="work, personal, health..." 
+                              disabled="@(!isEditingAllowed)" />
+                    <div class="tags-suggestions">
+                        <span class="suggestion-label">Suggestions:</span>
+                        @foreach (var tag in GetCommonTags())
+                        {
+                            <span class="tag-suggestion" @onclick="() => OnTagSuggestionClicked(tag)"
+                                  style="@(isEditingAllowed ? "cursor: pointer;" : "pointer-events: none; opacity: 0.6;")">#@tag</span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Section -->
+            <div class="form-section content-section">
+                <label class="form-label">Your thoughts</label>
+                <div class="content-wrapper">
+                    <InputTextArea class="content-input" @bind-Value="entryModel.Content" 
+                                   placeholder="Start writing here... Express yourself freely..." 
+                                   rows="12"
+                                   disabled="@(!isEditingAllowed)" />
+                    <div class="content-footer">
+                        <span class="char-count">@entryModel.Content.Length characters</span>
+                        <span class="writing-tip">💡 Take your time, there's no rush</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            @if (isEditingAllowed)
+            {
+                <div class="form-actions">
+                    <button type="button" class="action-btn secondary" @onclick="Cancel">
+                        Cancel
+                    </button>
+                    <button type="submit" class="action-btn primary">
+                        <span class="btn-icon">✨</span>
+                        Save Entry
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="form-actions">
+                    <button type="button" class="action-btn secondary" @onclick="Cancel">
+                        Back
+                    </button>
+                </div>
+            }
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    [Parameter] public DateTime? Date { get; set; }
+    private JournalEntry entryModel = new JournalEntry { Date = DateTime.Today };
+    private bool isEditingAllowed = true;
+    private bool showExistingEntryMessage = false;
+    private bool showReadOnlyMessage = false;
+
+    private class MoodOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Emoji { get; set; } = string.Empty;
+
+        public MoodOption(string value, string emoji)
+        {
+            Value = value;
+            Emoji = emoji;
+        }
+    }
+
+    private List<MoodOption> GetMoodOptions()
+    {
+        return new List<MoodOption>
+        {
+            new("Happy", "😊"),
+            new("Excited", "🤩"),
+            new("Grateful", "🙏"),
+            new("Neutral", "😐"),
+            new("Sad", "😢"),
+            new("Stressed", "😫"),
+            new("Anxious", "😰"),
+            new("Angry", "😠"),
+            new("Tired", "😴")
+        };
+    }
+
+    private string GetMoodEmoji(string mood) =>
+        GetMoodOptions().FirstOrDefault(m => m.Value.Equals(mood, StringComparison.OrdinalIgnoreCase))?.Emoji ?? "❓";
+
+    private void OnMoodSelected(string mood)
+    {
+        if (!isEditingAllowed) return;
+        
+        if (entryModel.PrimaryMood == mood)
+        {
+            entryModel.PrimaryMood = string.Empty;
+        }
+        else if (entryModel.HasSecondaryMood(mood))
+        {
+            entryModel.ToggleSecondaryMood(mood);
+        }
+        else if (string.IsNullOrEmpty(entryModel.PrimaryMood))
+        {
+            if (entryModel.HasSecondaryMood(mood))
+                entryModel.ToggleSecondaryMood(mood);
+            entryModel.PrimaryMood = mood;
+        }
+        else if (entryModel.GetSecondaryMoodsList().Count < 2)
+        {
+            if (entryModel.PrimaryMood == mood)
+                entryModel.PrimaryMood = string.Empty;
+            entryModel.ToggleSecondaryMood(mood);
+        }
+    }
+
+    private async Task SaveEntry()
+    {
+        if (!isEditingAllowed) return;
+
+        entryModel.UpdatedAt = DateTime.Now;
+        
+        if (entryModel.Id == 0)
+        {
+            entryModel.CreatedAt = DateTime.Now;
+            await DbService.SaveJournalEntryAsync(entryModel);
+        }
+        else
+        {
+            await DbService.UpdateJournalEntryAsync(entryModel);
+        }
+
+        NavManager.NavigateTo($"entry/{entryModel.Date:yyyy-MM-dd}");
+    }
+
+    private void Cancel()
+    {
+        NavManager.NavigateTo("/");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // If editing by ID
+            if (Id > 0)
+            {
+                var entry = await DbService.GetJournalEntryAsync(Id);
+                entryModel = entry ?? new JournalEntry { Date = DateTime.Today };
+                isEditingAllowed = entryModel.Date.Date == DateTime.Today;
+            }
+            // If creating new or with date parameter
+            else if (Date.HasValue)
+            {
+                var existingEntry = await DbService.GetJournalEntryByDateAsync(Date.Value);
+                if (existingEntry != null)
+                {
+                    entryModel = existingEntry;
+                    if (existingEntry.Date.Date == DateTime.Today)
+                    {
+                        showExistingEntryMessage = true;
+                        isEditingAllowed = true;
+                    }
+                    else
+                    {
+                        showReadOnlyMessage = true;
+                        isEditingAllowed = false;
+                    }
+                }
+                else
+                {
+                    entryModel = new JournalEntry { Date = Date.Value };
+                    isEditingAllowed = Date.Value.Date == DateTime.Today;
+                }
+            }
+            else
+            {
+                // No date provided, check if today already has entry
+                var todayEntry = await DbService.GetJournalEntryByDateAsync(DateTime.Today);
+                if (todayEntry != null)
+                {
+                    entryModel = todayEntry;
+                    showExistingEntryMessage = true;
+                    isEditingAllowed = true;
+                }
+                else
+                {
+                    entryModel = new JournalEntry { Date = DateTime.Today };
+                    isEditingAllowed = true;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("console.error", ex.Message);
+        }
+    }
+
+    private void AddTag(string tag)
+    {
+        if (string.IsNullOrEmpty(entryModel.Tags))
+        {
+            entryModel.Tags = tag;
+        }
+        else if (!entryModel.Tags.Split(',').Any(t => t.Trim().Equals(tag, StringComparison.OrdinalIgnoreCase)))
+        {
+            entryModel.Tags += $", {tag}";
+        }
+    }
+
+    private void OnTagSuggestionClicked(string tag)
+    {
+        if (isEditingAllowed)
+        {
+            AddTag(tag);
+        }
+    }
+
+    private List<string> GetCommonTags()
+    {
+        return new List<string> { "work", "personal", "health", "family", "friends", "travel", "learning", "gratitude" };
+    }
+}
+
+<style>
+    /* Editor Container */
+    .editor-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+        background: var(--card-bg);
+        min-height: 100vh;
+    }
+
+    /* Alerts */
+    .alert-box {
+        padding: 1rem;
+        border-radius: 0.75rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.95rem;
+    }
+
+    .alert-info {
+        background: rgba(59, 130, 246, 0.1);
+        border: 1px solid #3b82f6;
+        color: #1e40af;
+    }
+
+    .alert-warning {
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid #f59e0b;
+        color: #92400e;
+    }
+
+    .alert-icon {
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+
+    .alert-text {
+        flex: 1;
+    }
+
+    .dark-mode .alert-info {
+        background: rgba(59, 130, 246, 0.15);
+        color: #93c5fd;
+    }
+
+    .dark-mode .alert-warning {
+        background: rgba(245, 158, 11, 0.15);
+        color: #fcd34d;
+    }
+
+    /* Editor Header */
+    .editor-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 2rem;
+        border-bottom: 2px solid var(--border-color);
+        margin-bottom: 2rem;
+    }
+
+    .header-left, .header-right {
+        flex-shrink: 0;
+    }
+
+    .header-center {
+        flex: 1;
+        text-align: center;
+    }
+
+    .back-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: none;
+        border: 1px solid var(--border-color);
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        color: var(--text-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .back-btn:hover {
+        background: var(--card-bg);
+        transform: translateX(-2px);
+    }
+
+    .back-icon {
+        font-size: 1.2rem;
+    }
+
+    .back-text {
+        font-weight: 500;
+    }
+
+    .editor-title {
+        font-size: 1.8rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin: 0;
+    }
+
+    .editor-date {
+        color: var(--muted-text);
+        margin: 0.5rem 0 0 0;
+        font-size: 0.95rem;
+    }
+
+    .read-only-badge, .today-badge {
+        display: inline-block;
+        padding: 0.35rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-top: 0.5rem;
+    }
+
+    .read-only-badge {
+        background: rgba(239, 68, 68, 0.15);
+        color: #dc2626;
+    }
+
+    .today-badge {
+        background: rgba(34, 197, 94, 0.15);
+        color: #16a34a;
+    }
+
+    .save-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .save-btn:hover {
+        background: var(--primary-hover);
+        transform: translateY(-1px);
+    }
+
+    .save-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* Form Sections */
+    .form-section {
+        margin-bottom: 2rem;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 0.75rem;
+    }
+
+    /* Title Input */
+    .title-input {
+        width: 100%;
+        padding: 1rem;
+        font-size: 1.3rem;
+        font-weight: 600;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        background: var(--card-bg);
+        color: var(--text-color);
+        transition: all 0.2s ease;
+    }
+
+    .title-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    .title-input:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    /* Mood Selector */
+    .mood-instruction {
+        color: var(--muted-text);
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .mood-selected {
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: var(--bg-color);
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+    }
+
+    .selected-mood {
+        margin-bottom: 0.5rem;
+    }
+
+    .selected-mood:last-child {
+        margin-bottom: 0;
+    }
+
+    .mood-tag {
+        display: inline-flex;
+        align-items: center;
+        background: var(--primary-light);
+        padding: 0.35rem 0.8rem;
+        border-radius: 20px;
+        margin: 0.25rem;
+        font-size: 0.9rem;
+        color: var(--primary-color);
+    }
+
+    .mood-tag.empty {
+        opacity: 0.7;
+        font-style: italic;
+    }
+
+    .remove-mood {
+        margin-left: 0.5rem;
+        cursor: pointer;
+        font-size: 1.2rem;
+        line-height: 1;
+        opacity: 0.7;
+    }
+
+    .remove-mood:hover {
+        opacity: 1;
+    }
+
+    .mood-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .mood-option {
+        padding: 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+        text-align: center;
+        min-height: 80px;
+        background: var(--card-bg);
+    }
+
+    .mood-option:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .mood-option.primary-selected {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+
+    .mood-option.secondary-selected {
+        background: var(--primary-light);
+        border-color: var(--primary-color);
+    }
+
+    .mood-emoji {
+        font-size: 1.5rem;
+    }
+
+    .mood-name {
+        font-weight: 500;
+        color: var(--text-color);
+        font-size: 0.9rem;
+    }
+
+    .mood-option.primary-selected .mood-name {
+        color: white;
+    }
+
+    /* Tags Section */
+    .tags-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .tags-input {
+        width: 100%;
+        padding: 1rem;
+        font-size: 1rem;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        background: var(--card-bg);
+        color: var(--text-color);
+        transition: all 0.2s ease;
+    }
+
+    .tags-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    .tags-input:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    .tags-suggestions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .suggestion-label {
+        color: var(--muted-text);
+        font-size: 0.9rem;
+        margin-right: 0.5rem;
+    }
+
+    .tag-suggestion {
+        background: var(--bg-color);
+        border: 1px solid var(--border-color);
+        color: var(--text-color);
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .tag-suggestion:hover {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+
+    /* Content Section */
+    .content-section {
+        margin-bottom: 2rem;
+    }
+
+    .content-wrapper {
+        position: relative;
+    }
+
+    .content-input {
+        width: 100%;
+        padding: 1.5rem;
+        font-size: 1.1rem;
+        line-height: 1.6;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        background: var(--card-bg);
+        color: var(--text-color);
+        resize: vertical;
+        min-height: 300px;
+        font-family: inherit;
+        transition: all 0.2s ease;
+    }
+
+    .content-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    .content-input:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    .content-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+        padding: 0.5rem 1rem;
+        background: rgba(79, 70, 229, 0.05);
+        border-radius: 8px;
+    }
+
+    .char-count {
+        font-size: 0.85rem;
+        color: var(--muted-text);
+    }
+
+    .writing-tip {
+        font-size: 0.85rem;
+        color: var(--primary-color);
+        font-style: italic;
+    }
+
+    /* Form Actions */
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        padding-top: 2rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .action-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .action-btn.primary {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+
+    .action-btn.primary:hover {
+        background: var(--primary-hover);
+        transform: translateY(-1px);
+    }
+
+    .action-btn.secondary {
+        background: var(--card-bg);
+        color: var(--text-color);
+        border-color: var(--border-color);
+    }
+
+    .action-btn.secondary:hover {
+        background: var(--border-color);
+    }
+
+    .btn-icon {
+        font-size: 1rem;
+    }
+
+    /* Dark Mode Enhancements */
+    .dark-mode .mood-selected {
+        background: var(--card-bg);
+    }
+
+    .dark-mode .content-footer {
+        background: rgba(129, 140, 248, 0.1);
+    }
+</style>

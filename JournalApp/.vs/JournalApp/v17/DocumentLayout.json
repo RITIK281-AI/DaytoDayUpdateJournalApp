@@ -1,0 +1,139 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\Lenovo\\Desktop\\kunwar\\JournalApp\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{BA5D14EC-12EB-5F4F-6E55-E1C5263B85DF}|JournalApp.csproj|c:\\users\\lenovo\\desktop\\kunwar\\journalapp\\components\\pages\\calendar.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{BA5D14EC-12EB-5F4F-6E55-E1C5263B85DF}|JournalApp.csproj|solutionrelative:components\\pages\\calendar.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BA5D14EC-12EB-5F4F-6E55-E1C5263B85DF}|JournalApp.csproj|c:\\users\\lenovo\\desktop\\kunwar\\journalapp\\components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{BA5D14EC-12EB-5F4F-6E55-E1C5263B85DF}|JournalApp.csproj|solutionrelative:components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BA5D14EC-12EB-5F4F-6E55-E1C5263B85DF}|JournalApp.csproj|c:\\users\\lenovo\\desktop\\kunwar\\journalapp\\services\\databaseservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BA5D14EC-12EB-5F4F-6E55-E1C5263B85DF}|JournalApp.csproj|solutionrelative:services\\databaseservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BA5D14EC-12EB-5F4F-6E55-E1C5263B85DF}|JournalApp.csproj|c:\\users\\lenovo\\desktop\\kunwar\\journalapp\\components\\pages\\entrypreview.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{BA5D14EC-12EB-5F4F-6E55-E1C5263B85DF}|JournalApp.csproj|solutionrelative:components\\pages\\entrypreview.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BA5D14EC-12EB-5F4F-6E55-E1C5263B85DF}|JournalApp.csproj|c:\\users\\lenovo\\desktop\\kunwar\\journalapp\\components\\pages\\dashboard.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{BA5D14EC-12EB-5F4F-6E55-E1C5263B85DF}|JournalApp.csproj|solutionrelative:components\\pages\\dashboard.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BA5D14EC-12EB-5F4F-6E55-E1C5263B85DF}|JournalApp.csproj|c:\\users\\lenovo\\desktop\\kunwar\\journalapp\\components\\pages\\addentry.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{BA5D14EC-12EB-5F4F-6E55-E1C5263B85DF}|JournalApp.csproj|solutionrelative:components\\pages\\addentry.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BA5D14EC-12EB-5F4F-6E55-E1C5263B85DF}|JournalApp.csproj|c:\\users\\lenovo\\desktop\\kunwar\\journalapp\\services\\pdfservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BA5D14EC-12EB-5F4F-6E55-E1C5263B85DF}|JournalApp.csproj|solutionrelative:services\\pdfservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 5,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "PdfService.cs",
+              "DocumentMoniker": "C:\\Users\\Lenovo\\Desktop\\kunwar\\JournalApp\\Services\\PdfService.cs",
+              "RelativeDocumentMoniker": "Services\\PdfService.cs",
+              "ToolTip": "C:\\Users\\Lenovo\\Desktop\\kunwar\\JournalApp\\Services\\PdfService.cs",
+              "RelativeToolTip": "Services\\PdfService.cs",
+              "ViewState": "AgIAABwAAAAAAAAAAAAMwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-27T13:50:17.56Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "AddEntry.razor",
+              "DocumentMoniker": "C:\\Users\\Lenovo\\Desktop\\kunwar\\JournalApp\\Components\\Pages\\AddEntry.razor",
+              "RelativeDocumentMoniker": "Components\\Pages\\AddEntry.razor",
+              "ToolTip": "C:\\Users\\Lenovo\\Desktop\\kunwar\\JournalApp\\Components\\Pages\\AddEntry.razor",
+              "RelativeToolTip": "Components\\Pages\\AddEntry.razor",
+              "ViewState": "AgIAABcBAAAAAAAAAIBZwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-01-27T13:49:50.128Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Dashboard.razor",
+              "DocumentMoniker": "C:\\Users\\Lenovo\\Desktop\\kunwar\\JournalApp\\Components\\Pages\\Dashboard.razor",
+              "RelativeDocumentMoniker": "Components\\Pages\\Dashboard.razor",
+              "ToolTip": "C:\\Users\\Lenovo\\Desktop\\kunwar\\JournalApp\\Components\\Pages\\Dashboard.razor",
+              "RelativeToolTip": "Components\\Pages\\Dashboard.razor",
+              "ViewState": "AgIAAC0BAAAAAAAAAIBJwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-01-27T13:46:28.914Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "EntryPreview.razor",
+              "DocumentMoniker": "C:\\Users\\Lenovo\\Desktop\\kunwar\\JournalApp\\Components\\Pages\\EntryPreview.razor",
+              "RelativeDocumentMoniker": "Components\\Pages\\EntryPreview.razor",
+              "ToolTip": "C:\\Users\\Lenovo\\Desktop\\kunwar\\JournalApp\\Components\\Pages\\EntryPreview.razor",
+              "RelativeToolTip": "Components\\Pages\\EntryPreview.razor",
+              "ViewState": "AgIAANwAAAAAAAAAAIBJwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-01-27T13:46:16.732Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "DatabaseService.cs",
+              "DocumentMoniker": "C:\\Users\\Lenovo\\Desktop\\kunwar\\JournalApp\\Services\\DatabaseService.cs",
+              "RelativeDocumentMoniker": "Services\\DatabaseService.cs",
+              "ToolTip": "C:\\Users\\Lenovo\\Desktop\\kunwar\\JournalApp\\Services\\DatabaseService.cs",
+              "RelativeToolTip": "Services\\DatabaseService.cs",
+              "ViewState": "AgIAAFYAAAAAAAAAAIBQwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-27T13:45:29.308Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Calendar.razor",
+              "DocumentMoniker": "C:\\Users\\Lenovo\\Desktop\\kunwar\\JournalApp\\Components\\Pages\\Calendar.razor",
+              "RelativeDocumentMoniker": "Components\\Pages\\Calendar.razor",
+              "ToolTip": "C:\\Users\\Lenovo\\Desktop\\kunwar\\JournalApp\\Components\\Pages\\Calendar.razor",
+              "RelativeToolTip": "Components\\Pages\\Calendar.razor",
+              "ViewState": "AgIAAMEBAAAAAAAAAAAawAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-01-27T13:42:38.816Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Home.razor",
+              "DocumentMoniker": "C:\\Users\\Lenovo\\Desktop\\kunwar\\JournalApp\\Components\\Pages\\Home.razor",
+              "RelativeDocumentMoniker": "Components\\Pages\\Home.razor",
+              "ToolTip": "C:\\Users\\Lenovo\\Desktop\\kunwar\\JournalApp\\Components\\Pages\\Home.razor",
+              "RelativeToolTip": "Components\\Pages\\Home.razor",
+              "ViewState": "AgIAAHcBAAAAAAAAAIBJwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-01-27T13:42:53.45Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

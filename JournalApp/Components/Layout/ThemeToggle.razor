@@ -1,0 +1,66 @@
+@inject IJSRuntime JSRuntime
+
+<button class="theme-toggle" @onclick="ToggleTheme">
+    <span class="theme-icon">@(isDarkMode ? "☀️" : "🌙")</span>
+</button>
+
+@code {
+    private bool isDarkMode = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check for saved theme preference or default to light mode
+        var savedTheme = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "theme");
+        isDarkMode = savedTheme == "dark";
+        ApplyTheme();
+    }
+
+    private async Task ToggleTheme()
+    {
+        isDarkMode = !isDarkMode;
+        ApplyTheme();
+        await JSRuntime.InvokeVoidAsync("localStorage.setItem", "theme", isDarkMode ? "dark" : "light");
+    }
+
+    private void ApplyTheme()
+    {
+        if (isDarkMode)
+        {
+            JSRuntime.InvokeVoidAsync("document.body.classList.add", "dark-mode");
+        }
+        else
+        {
+            JSRuntime.InvokeVoidAsync("document.body.classList.remove", "dark-mode");
+        }
+    }
+}
+
+<style>
+    .theme-toggle {
+        background: none;
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 16px;
+        color: var(--text-color);
+        margin-left: auto;
+        margin-right: 1rem;
+    }
+
+    .theme-toggle:hover {
+        background-color: var(--card-bg);
+        transform: scale(1.05);
+        box-shadow: 0 2px 8px var(--shadow-color);
+    }
+
+    .theme-icon {
+        display: inline-block;
+        transition: transform 0.3s ease;
+    }
+
+    .theme-toggle:hover .theme-icon {
+        transform: rotate(20deg);
+    }
+</style>

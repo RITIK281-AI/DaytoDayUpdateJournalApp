@@ -1,0 +1,65 @@
+@using JournalApp.Services
+@inject PinService PinService
+@inject AuthService AuthService
+@inject NavigationManager NavManager
+@implements IDisposable
+
+@if (isAuthenticated)
+{
+    @ChildContent
+}
+else
+{
+    <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Checking authentication...</p>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private bool isAuthenticated = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        AuthService.OnAuthenticationChanged += OnAuthenticationChanged;
+        await CheckAuthentication();
+    }
+
+    private async void OnAuthenticationChanged()
+    {
+        await CheckAuthentication();
+    }
+
+    private async Task CheckAuthentication()
+    {
+        // Check if PIN is setup
+        var isPinSetup = await PinService.IsPinSetupAsync();
+        
+        if (!isPinSetup)
+        {
+            // PIN not setup - redirect to setup first
+            NavManager.NavigateTo("/pin-setup");
+            return;
+        }
+
+        // Check if already authenticated
+        isAuthenticated = await AuthService.IsAuthenticatedAsync();
+        
+        if (!isAuthenticated)
+        {
+            NavManager.NavigateTo("/pin-login");
+            return;
+        }
+
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        AuthService.OnAuthenticationChanged -= OnAuthenticationChanged;
+    }
+}
+

@@ -1,0 +1,218 @@
+<nav class="nav-menu">
+    <div class="nav-items">
+        <div class="nav-item">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="nav-icon oi oi-home" aria-hidden="true"></span>
+                <span class="nav-text">Home</span>
+            </NavLink>
+        </div>
+        <div class="nav-item">
+            <NavLink class="nav-link" href="/dashboard" Match="NavLinkMatch.Prefix">
+                <span class="nav-icon oi oi-dashboard" aria-hidden="true"></span>
+                <span class="nav-text">Dashboard</span>
+            </NavLink>
+        </div>
+        <div class="nav-item">
+            <NavLink class="nav-link" href="/calendar" Match="NavLinkMatch.Prefix">
+                <span class="nav-icon oi oi-calendar" aria-hidden="true"></span>
+                <span class="nav-text">Calendar</span>
+            </NavLink>
+        </div>
+        <div class="nav-item">
+            <NavLink class="nav-link" href="/settings" Match="NavLinkMatch.Prefix">
+                <span class="nav-icon oi oi-cog" aria-hidden="true"></span>
+                <span class="nav-text">Settings</span>
+            </NavLink>
+        </div>
+    </div>
+    
+    <div class="nav-footer">
+        <div class="nav-item">
+            <button class="nav-link logout-btn" @onclick="Logout">
+                <span class="nav-icon">🚪</span>
+                <span class="nav-text">Logout</span>
+            </button>
+        </div>
+    </div>
+</nav>
+
+@code {
+    [Inject] private AuthService AuthService { get; set; } = null!;
+    [Inject] private NavigationManager Navigation { get; set; } = null!;
+
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/pin-login");
+    }
+}
+
+<style>
+    .nav-menu {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        padding: var(--spacing-lg);
+        background: linear-gradient(135deg, #2c5aa0 0%, #1e3a8a 100%);
+    }
+
+    .nav-items {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .nav-footer {
+        margin-top: auto;
+        padding-top: var(--spacing-lg);
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .nav-item {
+        position: relative;
+    }
+
+    .nav-link {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-lg);
+        padding: var(--spacing-lg) var(--spacing-xl);
+        border-radius: var(--border-radius-xl);
+        color: rgba(255, 255, 255, 0.85);
+        text-decoration: none;
+        font-weight: var(--font-weight-medium);
+        font-size: var(--font-size-base);
+        transition: all var(--transition-fast);
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        text-align: left;
+        background: none;
+        border: none;
+        font-family: inherit;
+        cursor: pointer;
+    }
+
+    .nav-link::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 4px;
+        background: #fbbf24;
+        transform: scaleY(0);
+        transform-origin: top;
+        transition: transform var(--transition-fast);
+    }
+
+    .nav-link:hover {
+        background: rgba(255, 255, 255, 0.15);
+        color: #ffffff;
+        padding-left: calc(var(--spacing-xl) + 2px);
+    }
+
+    .nav-link:hover::before {
+        transform: scaleY(1);
+    }
+
+    .logout-btn {
+        color: rgba(255, 255, 255, 0.85) !important;
+    }
+
+    .logout-btn:hover {
+        background: rgba(239, 68, 68, 0.25) !important;
+        color: #fff !important;
+    }
+
+    .logout-btn .nav-icon {
+        color: #fbbf24;
+    }
+
+    .nav-link.active {
+        background: rgba(255, 255, 255, 0.25);
+        color: #ffffff;
+        font-weight: var(--font-weight-semibold);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+    }
+
+    .nav-link.active::before {
+        transform: scaleY(1);
+    }
+
+    .nav-icon {
+        font-size: var(--font-size-xl);
+        width: 24px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .nav-text {
+        flex: 1;
+        letter-spacing: 0.3px;
+    }
+
+    /* Enhanced animations */
+    .nav-link {
+        position: relative;
+    }
+
+    .nav-link::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+        transform: translate(-50%, -50%);
+        transition: width 0.3s ease, height 0.3s ease;
+    }
+
+    .nav-link:active::after {
+        width: 120px;
+        height: 120px;
+    }
+
+    /* Dark mode enhancements */
+    .dark-mode .nav-menu {
+        background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+    }
+
+    .dark-mode .nav-link {
+        color: rgba(255, 255, 255, 0.9) !important;
+    }
+
+    .dark-mode .nav-link:hover {
+        background: rgba(255, 255, 255, 0.12) !important;
+        color: #ffffff !important;
+    }
+
+    .dark-mode .nav-link.active {
+        background: rgba(255, 255, 255, 0.2) !important;
+        color: #ffffff !important;
+    }
+
+    /* Responsive design */
+    @@media (max-width: 768px) {
+        .nav-menu {
+            padding: var(--spacing-md);
+        }
+
+        .nav-link {
+            padding: var(--spacing-md) var(--spacing-lg);
+            font-size: var(--font-size-sm);
+            gap: var(--spacing-md);
+        }
+
+        .nav-icon {
+            font-size: var(--font-size-lg);
+        }
+
+        .nav-text {
+            font-size: var(--font-size-sm);
+        }
+    }
+</style>
