@@ -1,4 +1,0 @@
-wwwroot\css\app.css
-wwwroot\index.html
-C:\Users\suban\Documents\Y3\CS6004NP App Dev\CourseWork\DailyJournalApp\wwwroot\css\app.css
-C:\Users\suban\Documents\Y3\CS6004NP App Dev\CourseWork\DailyJournalApp\wwwroot\index.html
